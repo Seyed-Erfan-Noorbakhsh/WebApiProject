@@ -1,4 +1,4 @@
-using Shop_ProjForWeb.Core.Application.Configuration;
+﻿using Shop_ProjForWeb.Core.Application.Configuration;
 using Shop_ProjForWeb.Core.Application.Interfaces;
 using Shop_ProjForWeb.Core.Application.Services;
 using Shop_ProjForWeb.Infrastructure.Persistent.DbContext;
@@ -69,3 +69,4 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+////فثسف
