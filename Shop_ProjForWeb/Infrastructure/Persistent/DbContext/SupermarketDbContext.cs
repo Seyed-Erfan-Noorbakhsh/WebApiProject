@@ -22,6 +22,7 @@ public class SupermarketDbContext : DbContext
         // User Configuration
         modelBuilder.Entity<User>(entity =>
         {
+            entity.ToTable("Users");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.FullName).IsRequired();
             entity.Property(e => e.IsVip).IsRequired();
@@ -31,6 +32,7 @@ public class SupermarketDbContext : DbContext
         // Product Configuration
         modelBuilder.Entity<Product>(entity =>
         {
+            entity.ToTable("Product");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).IsRequired();
             entity.Property(e => e.BasePrice).IsRequired();
@@ -42,6 +44,7 @@ public class SupermarketDbContext : DbContext
         // Inventory Configuration
         modelBuilder.Entity<Inventory>(entity =>
         {
+            entity.ToTable("Inventories");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.ProductId).IsRequired();
             entity.Property(e => e.Quantity).IsRequired();
@@ -53,6 +56,7 @@ public class SupermarketDbContext : DbContext
         // Order Configuration
         modelBuilder.Entity<Order>(entity =>
         {
+            entity.ToTable("Orders");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.UserId).IsRequired();
             entity.Property(e => e.Status).IsRequired();
@@ -64,6 +68,7 @@ public class SupermarketDbContext : DbContext
         // OrderItem Configuration
         modelBuilder.Entity<OrderItem>(entity =>
         {
+            entity.ToTable("OrderItems");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.OrderId).IsRequired();
             entity.Property(e => e.ProductId).IsRequired();
