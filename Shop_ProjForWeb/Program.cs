@@ -6,8 +6,8 @@ using Shop_ProjForWeb.Infrastructure.Persistent;
 using Shop_ProjForWeb.Infrastructure.Repositories;
 using Shop_ProjForWeb.Presentation.Middleware;
 using Microsoft.EntityFrameworkCore;
-using Shop_ProjForWeb.Core.Application.Interfaces;
 using Shop_ProjForWeb.Infrastructure.UnitOfWork;
+
 
 //using MediatR;
 using System.Reflection;
