@@ -50,10 +50,24 @@ namespace Shop_ProjForWeb.Core.Application.Orders.Commands.CreateOrder
                 Status = OrderStatus.Created,
                 TotalPrice = 0
             };
+
             decimal totalPrice = 0;
 
             foreach (var item in request.Items)
             {
+                var product = await _productRepository.GetByIdAsync(item.ProductId);
+                if (product == null)
+                    throw new Exception($"Product not found with id {item.ProductId}");
+
+                var inventory = await _inventoryRepository.GetByProductIdAsync(item.ProductId);
+                if (inventory == null)
+                    throw new Exception($"Inventory not found for product {item.ProductId}");
+
+                var unitPrice = _pricingService.CalculateFinalPrice(
+                    product.BasePrice,
+                    product.DiscountPercent,
+                    user.IsVip);
+
                 
             }
 
