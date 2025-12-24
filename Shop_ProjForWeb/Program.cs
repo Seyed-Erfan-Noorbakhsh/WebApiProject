@@ -1,3 +1,4 @@
+using Shop_ProjForWeb.Core.Application.Configuration;
 using Shop_ProjForWeb.Core.Application.Interfaces;
 using Shop_ProjForWeb.Core.Application.Services;
 using Shop_ProjForWeb.Infrastructure.Persistent.DbContext;
@@ -25,6 +26,8 @@ builder.Services.AddScoped<ProductImageService>();
 
 builder.Services.Configure<FileUploadOptions>(builder.Configuration.GetSection("FileUpload"));
 
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<AgifyService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
