@@ -6,12 +6,23 @@ using Shop_ProjForWeb.Infrastructure.Persistent;
 using Shop_ProjForWeb.Infrastructure.Repositories;
 using Shop_ProjForWeb.Presentation.Middleware;
 using Microsoft.EntityFrameworkCore;
+using MediatR;
+using System.Reflection;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddDbContext<SupermarketDbContext>(options =>
     options.UseSqlite("Data Source=supermarket.db"));
+
+
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
+});
+
+
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
@@ -34,6 +45,7 @@ builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 
 var app = builder.Build();
 
