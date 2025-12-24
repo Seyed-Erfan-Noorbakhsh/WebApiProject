@@ -6,8 +6,13 @@ using Shop_ProjForWeb.Infrastructure.Persistent;
 using Shop_ProjForWeb.Infrastructure.Repositories;
 using Shop_ProjForWeb.Presentation.Middleware;
 using Microsoft.EntityFrameworkCore;
-using MediatR;
+using Shop_ProjForWeb.Core.Application.Interfaces;
+using Shop_ProjForWeb.Infrastructure.UnitOfWork;
+
+//using MediatR;
 using System.Reflection;
+
+
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,6 +38,9 @@ builder.Services.AddScoped<PricingService>();
 builder.Services.AddScoped<InventoryService>();
 builder.Services.AddScoped<VipUpgradeService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+
 
 builder.Services.AddScoped<ProductImageService>();
 
