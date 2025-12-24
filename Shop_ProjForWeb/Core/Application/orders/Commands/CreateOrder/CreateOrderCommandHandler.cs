@@ -3,6 +3,8 @@ using Shop_ProjForWeb.Core.Application.DTOs;
 using Shop_ProjForWeb.Core.Application.Interfaces;
 using Shop_ProjForWeb.Core.Domain.Entities;
 using Shop_ProjForWeb.Core.Domain.Enums;
+using Shop_ProjForWeb.Core.Application.Services;
+
 
 namespace Shop_ProjForWeb.Core.Application.Orders.Commands.CreateOrder
 {
@@ -68,10 +70,39 @@ namespace Shop_ProjForWeb.Core.Application.Orders.Commands.CreateOrder
                     product.DiscountPercent,
                     user.IsVip);
 
-                
+                var orderItem = new OrderItem
+                {
+                    OrderId = order.Id,
+                    ProductId = item.ProductId,
+                    UnitPrice = unitPrice,
+                    Quantity = item.Quantity,
+                    DiscountApplied = product.DiscountPercent
+                };
+
+                order.OrderItems.Add(orderItem);
+
+                totalPrice += unitPrice * item.Quantity;
+
+                await _inventoryService.DecreaseStockAsync(item.ProductId, item.Quantity);
+            }
+
+
+            order.TotalPrice = totalPrice;
+
+            await _orderRepository.AddAsync(order);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return new OrderResponseDto
+            {
+                OrderId = order.Id,
+                TotalPrice = order.TotalPrice,
+                Status = order.Status
+            };
+
+
             }
 
             
         }
     }
-}
+
