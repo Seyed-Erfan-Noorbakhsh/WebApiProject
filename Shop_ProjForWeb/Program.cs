@@ -4,6 +4,7 @@ using Shop_ProjForWeb.Core.Application.Services;
 using Shop_ProjForWeb.Infrastructure.Persistent.DbContext;
 using Shop_ProjForWeb.Infrastructure.Persistent;
 using Shop_ProjForWeb.Infrastructure.Repositories;
+using Shop_ProjForWeb.Presentation.Middleware;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,7 +29,9 @@ builder.Services.Configure<FileUploadOptions>(builder.Configuration.GetSection("
 
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<AgifyService>();
+
 builder.Services.AddControllers();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -40,6 +43,8 @@ if (!Directory.Exists(uploadFolder))
 {
     Directory.CreateDirectory(uploadFolder);
 }
+
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 // Apply migrations and seed database
 using (var scope = app.Services.CreateScope())
