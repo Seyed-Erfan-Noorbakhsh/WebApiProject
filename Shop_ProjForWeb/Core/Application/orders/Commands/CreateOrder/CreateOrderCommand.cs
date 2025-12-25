@@ -5,7 +5,7 @@ namespace Shop_ProjForWeb.Core.Application.Orders.Commands.CreateOrder
 {
     public class CreateOrderCommand : IRequest<OrderResponseDto>
     {
-        public Guid UserId { get; init; }
+        public int UserId { get; init; }
         public List<CreateOrderItemDto> Items { get; init; } = new();
     }
 }
