@@ -5,7 +5,7 @@ using Shop_ProjForWeb.Core.Domain.Entities;
 public interface IOrderRepository
 {
     Task AddAsync(Order order);
-    Task<Order?> GetByIdAsync(Guid id);
+    Task<Order?> GetByIdAsync(int id);
     Task UpdateAsync(Order order);
-    Task<decimal> GetTotalPaidAmountForUserAsync(Guid userId);
+    Task<decimal> GetTotalPaidAmountForUserAsync(int userId);
 }
