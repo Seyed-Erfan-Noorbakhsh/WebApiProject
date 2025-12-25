@@ -1,7 +1,7 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Shop_ProjForWeb.Core.Domain.Entities;
-using Shop_ProjForWeb.Core.Domain.Interfaces;
+using Shop_ProjForWeb.Domain.Interfaces;
 using Shop_ProjForWeb.Infrastructure.Data;
 
 namespace Shop_ProjForWeb.Infrastructure.Repositories;
@@ -17,7 +17,7 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         _dbSet = context.Set<T>();
     }
 
-    public async Task<T?> GetByIdAsync(Guid id)
+    public async Task<T?> GetByIdAsync(int id)
         => await _dbSet.FindAsync(id);
 
     public async Task<IEnumerable<T>> GetAllAsync()

@@ -1,9 +1,8 @@
-
 namespace Shop_ProjForWeb.Core.Application.DTOs.User;
 
 public class UserDto
 {
-    public Guid id { get; set; }
+    public int Id { get; set; }
     public string Username { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string FirstName { get; set; } = string.Empty;
