@@ -1,48 +1,35 @@
 using MediatR;
 using Shop_ProjForWeb.Core.Application.DTOs;
-using Shop_ProjForWeb.Core.Application.Interfaces;
 using Shop_ProjForWeb.Core.Domain.Entities;
 using Shop_ProjForWeb.Core.Domain.Enums;
+using Shop_ProjForWeb.Domain.Interfaces;
 using Shop_ProjForWeb.Core.Application.Services;
-
-
 namespace Shop_ProjForWeb.Core.Application.Orders.Commands.CreateOrder
 {
     public class CreateOrderCommandHandler
         : IRequestHandler<CreateOrderCommand, OrderResponseDto>
     {
-         private readonly IUserRepository _userRepository;
-        private readonly IProductRepository _productRepository;
-        private readonly IInventoryRepository _inventoryRepository;
-        private readonly IOrderRepository _orderRepository;
+        private readonly IUnitOfWork _unitOfWork;
+    
         private readonly PricingService _pricingService;
         private readonly InventoryService _inventoryService;
-        private readonly IUnitOfWork _unitOfWork;
 
         public CreateOrderCommandHandler(
-             IUserRepository userRepository,
-            IProductRepository productRepository,
-            IInventoryRepository inventoryRepository,
-            IOrderRepository orderRepository,
+            IUnitOfWork unitOfWork,
             PricingService pricingService,
-            InventoryService inventoryService,
-            IUnitOfWork unitOfWork)
+            InventoryService inventoryService)
         
         {
-            _userRepository = userRepository;
-            _productRepository = productRepository;
-            _inventoryRepository = inventoryRepository;
-            _orderRepository = orderRepository;
+            _unitOfWork = unitOfWork;
             _pricingService = pricingService;
             _inventoryService = inventoryService;
-            _unitOfWork = unitOfWork;
         }
 
         public async Task<OrderResponseDto> Handle(
             CreateOrderCommand request,
             CancellationToken cancellationToken)
         {
-            var user = await _userRepository.GetByIdAsync(request.UserId);
+            var user = await _unitOfWork.Users.GetByIdAsync(request.UserId);
             if (user == null)
                 throw new Exception($"User not found with id {request.UserId}");
 
@@ -57,11 +44,11 @@ namespace Shop_ProjForWeb.Core.Application.Orders.Commands.CreateOrder
 
             foreach (var item in request.Items)
             {
-                var product = await _productRepository.GetByIdAsync(item.ProductId);
+                var product = await _unitOfWork.Products.GetByIdAsync(item.ProductId);
                 if (product == null)
                     throw new Exception($"Product not found with id {item.ProductId}");
 
-                var inventory = await _inventoryRepository.GetByProductIdAsync(item.ProductId);
+                var inventory = await _inventoryService.GetByProductIdAsync(item.ProductId);
                 if (inventory == null)
                     throw new Exception($"Inventory not found for product {item.ProductId}");
 
@@ -89,7 +76,7 @@ namespace Shop_ProjForWeb.Core.Application.Orders.Commands.CreateOrder
 
             order.TotalPrice = totalPrice;
 
-            await _orderRepository.AddAsync(order);
+            await _unitOfWork.Orders.AddAsync(order);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return new OrderResponseDto

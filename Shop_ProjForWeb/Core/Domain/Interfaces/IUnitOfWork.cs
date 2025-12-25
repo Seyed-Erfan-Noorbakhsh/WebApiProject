@@ -1,6 +1,5 @@
-using Shop_ProjForWeb.Core.Domain.Interfaces;
-using Shop_ProjForWeb.Core.Domain.Entities;
 
+using Shop_ProjForWeb.Core.Domain.Entities;
 
 namespace Shop_ProjForWeb.Domain.Interfaces;
 
@@ -15,6 +14,9 @@ public interface IUnitOfWork
     IRepository<RefreshToken> RefreshTokens { get; }
     IRepository<EmailVerificationToken> EmailVerificationTokens { get; }
     IRepository<PasswordResetToken> PasswordResetTokens { get; }
+
+    IRepository<Product> Products { get; }
+    IRepository<Order> Orders { get; }
     
     Task<int> SaveChangesAsync();
    

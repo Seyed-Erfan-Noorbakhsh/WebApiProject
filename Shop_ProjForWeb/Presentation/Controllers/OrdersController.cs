@@ -1,15 +1,10 @@
-
-
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Shop_ProjForWeb.Core.Application.DTOs;
 using Shop_ProjForWeb.Core.Application.Orders.Commands.CreateOrder;
 
 namespace Shop_ProjForWeb.Presentation.Controllers
-
-
 {
-
     [ApiController]
     [Route("api/[controller]")]
     public class OrdersController : ControllerBase
@@ -35,7 +30,7 @@ namespace Shop_ProjForWeb.Presentation.Controllers
         }
 
         [HttpPost("{orderId}/pay")]
-        public async Task<IActionResult> PayOrder(Guid orderId)
+        public async Task<IActionResult> PayOrder(int orderId)
         {
             //await _orderService.PayOrderAsync(orderId);
             return Ok();
@@ -44,7 +39,7 @@ namespace Shop_ProjForWeb.Presentation.Controllers
 
     public class CreateOrderRequest
     {
-        public Guid UserId { get; set; }
+        public int UserId { get; set; }
         public List<CreateOrderItemDto> Items { get; set; } = new();
     }
 }

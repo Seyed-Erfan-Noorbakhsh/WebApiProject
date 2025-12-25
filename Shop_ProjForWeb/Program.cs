@@ -9,17 +9,16 @@ using Serilog;
 using AspNetCoreRateLimit;
 using FluentValidation;
 using FluentValidation.AspNetCore;
-
+using AutoMapper;
 using Shop_ProjForWeb.Core.Application.Configuration;
 using Shop_ProjForWeb.Core.Application.Interfaces;
 using Shop_ProjForWeb.Core.Application.Services;
-
-
+using Shop_ProjForWeb.Infrastructure.Data;
 using Shop_ProjForWeb.Infrastructure.Repositories;
-
 using Shop_ProjForWeb.Presentation.Middleware;
 using Shop_ProjForWeb.Infrastructure.Logging;
 using Shop_ProjForWeb.Infrastructure.Middleware;
+using Shop_ProjForWeb.Domain.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,8 +28,8 @@ builder.Host.UseSerilog();
 #endregion
 
 #region Database (SQLite – Supermarket)
-// builder.Services.AddDbContext<SupermarketDbContext>(options =>
-//     options.UseSqlite("Data Source=supermarket.db"));
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlite("Data Source=supermarket.db"));
 #endregion
 
 #region MediatR
@@ -40,23 +39,31 @@ builder.Services.AddMediatR(cfg =>
 });
 #endregion
 
-#region Repositories
+#region Repositories & Unit of Work
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 #endregion
 
-
-
-
 #region Application Services
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IPermissionService, PermissionService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<ILoggerService, SerilogLoggerService>();
 builder.Services.AddScoped<PricingService>();
 builder.Services.AddScoped<InventoryService>();
 builder.Services.AddScoped<VipUpgradeService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ProductImageService>();
 builder.Services.AddScoped<AgifyService>();
+
+// AutoMapper
+builder.Services.AddAutoMapper(typeof(Shop_ProjForWeb.Application.Mappings.MappingProfile));
 #endregion
 
 #region Configuration

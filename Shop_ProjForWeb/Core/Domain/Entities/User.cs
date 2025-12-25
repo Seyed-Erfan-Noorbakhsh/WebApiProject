@@ -10,6 +10,7 @@ public class User : BaseEntity
     public bool IsActive { get; set; } = true;
     public bool EmailConfirmed { get; set; } = false;
     public DateTime? LastLoginAt { get; set; }
+    public bool IsVip { get; set; } = false;
     
     // Navigation properties
     public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();

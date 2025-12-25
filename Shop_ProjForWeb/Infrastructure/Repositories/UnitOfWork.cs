@@ -1,5 +1,5 @@
 using Shop_ProjForWeb.Core.Domain.Entities;
-using Shop_ProjForWeb.Core.Domain.Interfaces;
+using Shop_ProjForWeb.Domain.Interfaces;
 using Shop_ProjForWeb.Infrastructure.Data;
 
 
@@ -23,6 +23,9 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<RefreshToken> RefreshTokens => new Repository<RefreshToken>(_context);
     public IRepository<EmailVerificationToken> EmailVerificationTokens => new Repository<EmailVerificationToken>(_context);
     public IRepository<PasswordResetToken> PasswordResetTokens => new Repository<PasswordResetToken>(_context);
+
+    public IRepository<Product> Products => new Repository<Product>(_context);
+    public IRepository<Order> Orders => new Repository<Order>(_context);
 
     public Task<int> SaveChangesAsync()
         => _context.SaveChangesAsync();
