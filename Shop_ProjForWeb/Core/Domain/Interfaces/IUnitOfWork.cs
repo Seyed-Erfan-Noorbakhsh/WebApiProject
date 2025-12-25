@@ -1,4 +1,6 @@
-using Shop_ProjForWeb.Domain.Entities;
+using Shop_ProjForWeb.Core.Domain.Interfaces;
+using Shop_ProjForWeb.Core.Domain.Entities;
+
 
 namespace Shop_ProjForWeb.Domain.Interfaces;
 

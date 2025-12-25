@@ -4,13 +4,14 @@ using Microsoft.EntityFrameworkCore;
 using Shop_ProjForWeb.Core.Application.Interfaces;
 using Shop_ProjForWeb.Core.Domain.Entities;
 using Shop_ProjForWeb.Core.Domain.Enums;
-using Shop_ProjForWeb.Infrastructure.Persistent.DbContext;
+using Shop_ProjForWeb.Infrastructure.Data;
+
 
 public class OrderRepository : IOrderRepository
 {
-    private readonly SupermarketDbContext _context;
+    private readonly ApplicationDbContext _context;
 
-    public OrderRepository(SupermarketDbContext context)
+    public OrderRepository(ApplicationDbContext context)
     {
         _context = context;
     }

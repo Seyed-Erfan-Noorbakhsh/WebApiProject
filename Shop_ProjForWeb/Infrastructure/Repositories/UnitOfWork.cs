@@ -1,6 +1,7 @@
-using Shop_ProjForWeb.Domain.Entities;
-using Shop_ProjForWeb.Domain.Interfaces;
+using Shop_ProjForWeb.Core.Domain.Entities;
+using Shop_ProjForWeb.Core.Domain.Interfaces;
 using Shop_ProjForWeb.Infrastructure.Data;
+
 
 namespace Shop_ProjForWeb.Infrastructure.Repositories;
 

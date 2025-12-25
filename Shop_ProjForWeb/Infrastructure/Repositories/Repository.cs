@@ -1,7 +1,7 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
-using Shop_ProjForWeb.Domain.Entities;
-using Shop_ProjForWeb.Domain.Interfaces;
+using Shop_ProjForWeb.Core.Domain.Entities;
+using Shop_ProjForWeb.Core.Domain.Interfaces;
 using Shop_ProjForWeb.Infrastructure.Data;
 
 namespace Shop_ProjForWeb.Infrastructure.Repositories;
@@ -18,31 +18,32 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
     }
 
     public async Task<T?> GetByIdAsync(Guid id)
+        => await _dbSet.FindAsync(id);
+
+    public async Task<IEnumerable<T>> GetAllAsync()
+    => await _dbSet.ToListAsync();
+
+    public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
+    => await _dbSet.Where(predicate).ToListAsync();
+
+    public async Task<T> AddAsync(T entity)
     {
-        return await _dbSet.FindAsync(id);
+        await _dbSet.AddAsync(entity);
+        return entity;
     }
 
+    public Task UpdateAsync(T entity)
+    {
+        _dbSet.Update(entity);
+        return Task.CompletedTask;
+    }
 
-    public async Task AddAsync(T entity)
-        => await _dbSet.AddAsync(entity);
+    public Task DeleteAsync(T entity)
+    {
+        _dbSet.Remove(entity);
+        return Task.CompletedTask;
+    }
 
-     public void Update(T entity)
-        => _dbSet.Update(entity);
-    
-    public void Remove(T entity)
-        => _dbSet.Remove(entity);
+    public async Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate)
+        => await _dbSet.AnyAsync(predicate);
 }
-
-//     public async Task DeleteAsync(T entity)
-//     {
-//         entity.IsDeleted = true;
-//         entity.UpdatedAt = DateTime.UtcNow;
-//         await UpdateAsync(entity);
-//     }
-
-//     public async Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate)
-//     {
-//         return await _dbSet.AnyAsync(predicate);
-//     }
-// }
-

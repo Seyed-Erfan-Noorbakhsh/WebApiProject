@@ -13,10 +13,10 @@ using FluentValidation.AspNetCore;
 using Shop_ProjForWeb.Core.Application.Configuration;
 using Shop_ProjForWeb.Core.Application.Interfaces;
 using Shop_ProjForWeb.Core.Application.Services;
-using Shop_ProjForWeb.Infrastructure.Persistent;
-//using Shop_ProjForWeb.Infrastructure.Persistent.DbContext;
+
+
 using Shop_ProjForWeb.Infrastructure.Repositories;
-using Shop_ProjForWeb.Infrastructure.UnitOfWork;
+
 using Shop_ProjForWeb.Presentation.Middleware;
 using Shop_ProjForWeb.Infrastructure.Logging;
 using Shop_ProjForWeb.Infrastructure.Middleware;
@@ -47,9 +47,8 @@ builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 #endregion
 
-#region Unit Of Work
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-#endregion
+
+
 
 #region Application Services
 builder.Services.AddScoped<PricingService>();
@@ -178,15 +177,6 @@ app.UseAuthorization();
 
 app.UseStaticFiles();
 app.MapControllers();
-#endregion
-
-#region Database Init + Seed
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<SupermarketDbContext>();
-    db.Database.Migrate();
-    await DbSeeder.SeedAsync(db);
-}
 #endregion
 
 Log.Information("Application started successfully");

@@ -1,5 +1,6 @@
 namespace Shop_ProjForWeb.Core.Domain.Entities;
 
+
 public class Inventory : BaseEntity
 {
     public Guid ProductId { get; set; }

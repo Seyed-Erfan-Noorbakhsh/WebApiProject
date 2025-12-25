@@ -1,5 +1,6 @@
+using ILogger = Serilog.ILogger;
 using Shop_ProjForWeb.Application.Interfaces;
-using Serilog;
+
 
 namespace Shop_ProjForWeb.Infrastructure.Logging;
 
