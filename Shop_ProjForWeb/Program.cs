@@ -14,7 +14,7 @@ using Shop_ProjForWeb.Core.Application.Configuration;
 using Shop_ProjForWeb.Core.Application.Interfaces;
 using Shop_ProjForWeb.Core.Application.Services;
 using Shop_ProjForWeb.Infrastructure.Persistent;
-using Shop_ProjForWeb.Infrastructure.Persistent.DbContext;
+//using Shop_ProjForWeb.Infrastructure.Persistent.DbContext;
 using Shop_ProjForWeb.Infrastructure.Repositories;
 using Shop_ProjForWeb.Infrastructure.UnitOfWork;
 using Shop_ProjForWeb.Presentation.Middleware;
@@ -29,8 +29,8 @@ builder.Host.UseSerilog();
 #endregion
 
 #region Database (SQLite – Supermarket)
-builder.Services.AddDbContext<SupermarketDbContext>(options =>
-    options.UseSqlite("Data Source=supermarket.db"));
+// builder.Services.AddDbContext<SupermarketDbContext>(options =>
+//     options.UseSqlite("Data Source=supermarket.db"));
 #endregion
 
 #region MediatR

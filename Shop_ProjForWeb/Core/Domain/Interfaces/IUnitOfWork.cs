@@ -2,7 +2,7 @@ using Shop_ProjForWeb.Domain.Entities;
 
 namespace Shop_ProjForWeb.Domain.Interfaces;
 
-public interface IUnitOfWork : IDisposable
+public interface IUnitOfWork
 {
     IRepository<User> Users { get; }
     IRepository<Role> Roles { get; }
@@ -15,8 +15,6 @@ public interface IUnitOfWork : IDisposable
     IRepository<PasswordResetToken> PasswordResetTokens { get; }
     
     Task<int> SaveChangesAsync();
-    Task BeginTransactionAsync();
-    Task CommitTransactionAsync();
-    Task RollbackTransactionAsync();
+   
 }
 
