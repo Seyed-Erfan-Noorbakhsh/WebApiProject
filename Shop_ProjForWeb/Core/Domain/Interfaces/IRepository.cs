@@ -1,11 +1,11 @@
 using System.Linq.Expressions;
 using Shop_ProjForWeb.Core.Domain.Entities;
 
-namespace Shop_ProjForWeb.Core.Domain.Interfaces;
+namespace Shop_ProjForWeb.Domain.Interfaces;
 
 public interface IRepository<T> where T : BaseEntity
 {
-    Task<T?> GetByIdAsync(Guid id);
+    Task<T?> GetByIdAsync(int id);
     Task<IEnumerable<T>> GetAllAsync();
     Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate);
     Task<T> AddAsync(T entity);
