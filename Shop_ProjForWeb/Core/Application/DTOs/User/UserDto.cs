@@ -1,4 +1,4 @@
-namespace Shop_ProjForWeb.Application.DTOs.User;
+namespace Shop_ProjForWeb.Core.Application.DTOs.User;
 
 public class UserDto
 {

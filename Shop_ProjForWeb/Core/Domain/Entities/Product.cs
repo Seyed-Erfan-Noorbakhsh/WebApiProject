@@ -1,5 +1,6 @@
 namespace Shop_ProjForWeb.Core.Domain.Entities;
 
+
 public class Product : BaseEntity
 {
     public string Name { get; set; }

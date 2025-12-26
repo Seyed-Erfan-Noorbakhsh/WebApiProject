@@ -1,7 +1,8 @@
 using AutoMapper;
 using Shop_ProjForWeb.Application.DTOs.User;
 using Shop_ProjForWeb.Application.Interfaces;
-using Shop_ProjForWeb.Domain.Entities;
+using Shop_ProjForWeb.Core.Domain.Entities;
+using Shop_ProjForWeb.Core.Application.DTOs.User;
 using Shop_ProjForWeb.Domain.Interfaces;
 using BCrypt.Net;
 

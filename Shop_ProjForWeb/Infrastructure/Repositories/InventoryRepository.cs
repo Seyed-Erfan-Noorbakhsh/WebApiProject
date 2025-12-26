@@ -3,13 +3,14 @@ namespace Shop_ProjForWeb.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Shop_ProjForWeb.Core.Application.Interfaces;
 using Shop_ProjForWeb.Core.Domain.Entities;
-using Shop_ProjForWeb.Infrastructure.Persistent.DbContext;
+using Shop_ProjForWeb.Infrastructure.Data;
+
 
 public class InventoryRepository : IInventoryRepository
 {
-    private readonly SupermarketDbContext _context;
+    private readonly ApplicationDbContext _context;
 
-    public InventoryRepository(SupermarketDbContext context)
+    public InventoryRepository(ApplicationDbContext context)
     {
         _context = context;
     }

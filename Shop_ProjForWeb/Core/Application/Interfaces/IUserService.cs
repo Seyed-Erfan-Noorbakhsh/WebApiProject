@@ -1,4 +1,6 @@
 using Shop_ProjForWeb.Application.DTOs.User;
+using Shop_ProjForWeb.Core.Application.DTOs.User;
+
 
 namespace Shop_ProjForWeb.Application.Interfaces;
 

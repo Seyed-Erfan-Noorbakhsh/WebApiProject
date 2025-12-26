@@ -1,4 +1,8 @@
-namespace Shop_ProjForWeb.Application.DTOs.Auth;
+using Shop_ProjForWeb.Core.Application.DTOs.User;
+
+
+
+namespace Shop_ProjForWeb.Core.Application.DTOs.Auth;
 
 public class LoginResponseDto
 {
@@ -7,4 +11,3 @@ public class LoginResponseDto
     public DateTime ExpiresAt { get; set; }
     public UserDto User { get; set; } = null!;
 }
-

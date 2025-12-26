@@ -1,7 +1,7 @@
 using AutoMapper;
 using Shop_ProjForWeb.Application.DTOs.Permission;
 using Shop_ProjForWeb.Application.Interfaces;
-using Shop_ProjForWeb.Domain.Entities;
+using Shop_ProjForWeb.Core.Domain.Entities;
 using Shop_ProjForWeb.Domain.Interfaces;
 
 namespace Shop_ProjForWeb.Application.Services;

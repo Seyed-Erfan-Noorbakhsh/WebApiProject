@@ -1,4 +1,4 @@
-namespace Shop_ProjForWeb.Domain.Entities;
+namespace Shop_ProjForWeb.Core.Domain.Entities;
 
 public class Role : BaseEntity
 {

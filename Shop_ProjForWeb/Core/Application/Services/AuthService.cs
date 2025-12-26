@@ -3,15 +3,15 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Shop_ProjForWeb.Application.DTOs.Auth;
 using Shop_ProjForWeb.Application.Interfaces;
-using Shop_ProjForWeb.Domain.Entities;
+using Shop_ProjForWeb.Core.Domain.Entities;
+using Shop_ProjForWeb.Core.Application.DTOs.Auth;
 using Shop_ProjForWeb.Domain.Interfaces;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using BCrypt.Net;
-
-namespace Shop_ProjForWeb.Application.Services;
+using Shop_ProjForWeb.Core.Application.DTOs.User;
 
 public class AuthService : IAuthService
 {
