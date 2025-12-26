@@ -1,86 +1,266 @@
 using Shop_ProjForWeb.Core.Domain.Entities;
 using Shop_ProjForWeb.Infrastructure.Persistent.DbContext;
 using Microsoft.EntityFrameworkCore;
+using Shop_ProjForWeb.Core.Domain.Enums;
 
-namespace Shop_ProjForWeb.Infrastructure.Persistent
+namespace Shop_ProjForWeb.Infrastructure.Persistent.Configurations
 {
     public static class DbSeeder
     {
         public static async Task SeedAsync(SupermarketDbContext db)
         {
-            if (!await db.Users.AnyAsync())
+            // Only seed if database is empty
+            if (await db.Users.AnyAsync() || await db.Products.AnyAsync())
+                return;
+
+            var random = new Random(42); // Fixed seed for consistent data
+
+            // Seed users with hardcoded data
+            var users = new List<User>
             {
-                var normalUser = new User
-                {
-                    FullName = "Normal Customer",
-                    IsVip = false,
-                };
+                new User { FullName = "John Hooper", Email = "john.hooper@email.com", Phone = "555-0101", Address = "123 Oak Street, Springfield, IL 62701", IsVip = false, TotalSpending = 245.50m, VipTier = 0 },
+                new User { FullName = "Sarah Mitchell", Email = "sarah.mitchell@email.com", Phone = "555-0102", Address = "456 Maple Avenue, Chicago, IL 60601", IsVip = true, TotalSpending = 1850.75m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-45) },
+                new User { FullName = "Michael Rodriguez", Email = "michael.rodriguez@email.com", Phone = "555-0103", Address = "789 Pine Road, Austin, TX 78701", IsVip = false, TotalSpending = 567.25m, VipTier = 0 },
+                new User { FullName = "Emily Johnson", Email = "emily.johnson@email.com", Phone = "555-0104", Address = "321 Elm Drive, Seattle, WA 98101", IsVip = true, TotalSpending = 2340.00m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-120) },
+                new User { FullName = "David Thompson", Email = "david.thompson@email.com", Phone = "555-0105", Address = "654 Cedar Lane, Denver, CO 80201", IsVip = false, TotalSpending = 892.30m, VipTier = 0 },
+                new User { FullName = "Jessica Williams", Email = "jessica.williams@email.com", Phone = "555-0106", Address = "987 Birch Street, Miami, FL 33101", IsVip = true, TotalSpending = 1675.50m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-30) },
+                new User { FullName = "Christopher Brown", Email = "christopher.brown@email.com", Phone = "555-0107", Address = "147 Willow Way, Portland, OR 97201", IsVip = false, TotalSpending = 423.75m, VipTier = 0 },
+                new User { FullName = "Amanda Davis", Email = "amanda.davis@email.com", Phone = "555-0108", Address = "258 Spruce Circle, Boston, MA 02101", IsVip = false, TotalSpending = 756.90m, VipTier = 0 },
+                new User { FullName = "Robert Wilson", Email = "robert.wilson@email.com", Phone = "555-0109", Address = "369 Ash Boulevard, Phoenix, AZ 85001", IsVip = true, TotalSpending = 3120.25m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-90) },
+                new User { FullName = "Lisa Anderson", Email = "lisa.anderson@email.com", Phone = "555-0110", Address = "741 Poplar Place, Nashville, TN 37201", IsVip = false, TotalSpending = 634.40m, VipTier = 0 },
+                new User { FullName = "James Taylor", Email = "james.taylor@email.com", Phone = "555-0111", Address = "852 Hickory Hill, Atlanta, GA 30301", IsVip = true, TotalSpending = 2890.80m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-75) },
+                new User { FullName = "Michelle Garcia", Email = "michelle.garcia@email.com", Phone = "555-0112", Address = "963 Magnolia Manor, San Diego, CA 92101", IsVip = false, TotalSpending = 445.60m, VipTier = 0 },
+                new User { FullName = "Kevin Martinez", Email = "kevin.martinez@email.com", Phone = "555-0113", Address = "159 Dogwood Drive, Las Vegas, NV 89101", IsVip = false, TotalSpending = 789.15m, VipTier = 0 },
+                new User { FullName = "Rachel Lee", Email = "rachel.lee@email.com", Phone = "555-0114", Address = "357 Sycamore Street, Minneapolis, MN 55401", IsVip = true, TotalSpending = 1945.30m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-60) },
+                new User { FullName = "Daniel White", Email = "daniel.white@email.com", Phone = "555-0115", Address = "468 Chestnut Court, Detroit, MI 48201", IsVip = false, TotalSpending = 523.85m, VipTier = 0 },
+                new User { FullName = "Nicole Harris", Email = "nicole.harris@email.com", Phone = "555-0116", Address = "579 Walnut Walk, Philadelphia, PA 19101", IsVip = false, TotalSpending = 678.20m, VipTier = 0 },
+                new User { FullName = "Matthew Clark", Email = "matthew.clark@email.com", Phone = "555-0117", Address = "680 Beech Bay, San Francisco, CA 94101", IsVip = true, TotalSpending = 2567.45m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-105) },
+                new User { FullName = "Stephanie Lewis", Email = "stephanie.lewis@email.com", Phone = "555-0118", Address = "791 Redwood Ridge, Houston, TX 77001", IsVip = false, TotalSpending = 834.70m, VipTier = 0 },
+                new User { FullName = "Andrew Robinson", Email = "andrew.robinson@email.com", Phone = "555-0119", Address = "802 Cypress Cove, New York, NY 10001", IsVip = true, TotalSpending = 3456.90m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-150) },
+                new User { FullName = "Jennifer Walker", Email = "jennifer.walker@email.com", Phone = "555-0120", Address = "913 Fir Forest, Los Angeles, CA 90001", IsVip = false, TotalSpending = 456.35m, VipTier = 0 },
+                new User { FullName = "Ryan Hall", Email = "ryan.hall@email.com", Phone = "555-0121", Address = "124 Juniper Junction, Orlando, FL 32801", IsVip = false, TotalSpending = 712.50m, VipTier = 0 },
+                new User { FullName = "Kimberly Allen", Email = "kimberly.allen@email.com", Phone = "555-0122", Address = "235 Laurel Lane, Salt Lake City, UT 84101", IsVip = true, TotalSpending = 1789.25m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-25) },
+                new User { FullName = "Brandon Young", Email = "brandon.young@email.com", Phone = "555-0123", Address = "346 Hemlock Heights, Kansas City, MO 64101", IsVip = false, TotalSpending = 598.80m, VipTier = 0 },
+                new User { FullName = "Megan King", Email = "megan.king@email.com", Phone = "555-0124", Address = "457 Sequoia Square, Charlotte, NC 28201", IsVip = false, TotalSpending = 923.40m, VipTier = 0 },
+                new User { FullName = "Tyler Wright", Email = "tyler.wright@email.com", Phone = "555-0125", Address = "568 Cottonwood Circle, Columbus, OH 43201", IsVip = true, TotalSpending = 2123.65m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-80) }
+            };
 
-                var vipUser = new User
-                {
-                    FullName = "VIP Customer",
-                    IsVip = true,
-                };
+            await db.Users.AddRangeAsync(users);
+            await db.SaveChangesAsync();
 
-                await db.Users.AddRangeAsync(normalUser, vipUser);
+            // Create 25 realistic products with hardcoded data
+            var products = new List<Product>
+            {
+                new Product { Name = "Organic Honeycrisp Apples", Description = "Sweet and crispy organic apples, perfect for snacking", Category = "Fruits", BasePrice = 5.99m, DiscountPercent = 10, IsActive = true },
+                new Product { Name = "Fresh Bananas", Description = "Ripe yellow bananas, great source of potassium", Category = "Fruits", BasePrice = 2.49m, DiscountPercent = 0, IsActive = true },
+                new Product { Name = "Whole Milk Gallon", Description = "Fresh whole milk from local dairy farms", Category = "Dairy", BasePrice = 4.29m, DiscountPercent = 5, IsActive = true },
+                new Product { Name = "Artisan Sourdough Bread", Description = "Handcrafted sourdough bread with crispy crust", Category = "Bakery", BasePrice = 6.99m, DiscountPercent = 15, IsActive = true },
+                new Product { Name = "Free-Range Chicken Breast", Description = "Premium free-range chicken breast, boneless", Category = "Meat", BasePrice = 12.99m, DiscountPercent = 8, IsActive = true },
+                new Product { Name = "Atlantic Salmon Fillet", Description = "Fresh Atlantic salmon, wild-caught", Category = "Seafood", BasePrice = 18.99m, DiscountPercent = 12, IsActive = true },
+                new Product { Name = "Organic Baby Spinach", Description = "Fresh organic baby spinach leaves", Category = "Vegetables", BasePrice = 3.99m, DiscountPercent = 0, IsActive = true },
+                new Product { Name = "Roma Tomatoes", Description = "Fresh Roma tomatoes, perfect for cooking", Category = "Vegetables", BasePrice = 2.99m, DiscountPercent = 5, IsActive = true },
+                new Product { Name = "Sharp Cheddar Cheese", Description = "Aged sharp cheddar cheese block", Category = "Dairy", BasePrice = 7.49m, DiscountPercent = 10, IsActive = true },
+                new Product { Name = "Greek Yogurt", Description = "Creamy Greek yogurt, high in protein", Category = "Dairy", BasePrice = 5.99m, DiscountPercent = 0, IsActive = true },
+                new Product { Name = "Chocolate Croissants", Description = "Buttery croissants filled with chocolate", Category = "Bakery", BasePrice = 8.99m, DiscountPercent = 20, IsActive = true },
+                new Product { Name = "Ground Beef 80/20", Description = "Fresh ground beef, 80% lean", Category = "Meat", BasePrice = 9.99m, DiscountPercent = 0, IsActive = true },
+                new Product { Name = "Fresh Strawberries", Description = "Sweet and juicy strawberries", Category = "Fruits", BasePrice = 4.99m, DiscountPercent = 15, IsActive = true },
+                new Product { Name = "Avocados", Description = "Ripe Hass avocados, perfect for guacamole", Category = "Fruits", BasePrice = 1.99m, DiscountPercent = 0, IsActive = true },
+                new Product { Name = "Pasta Penne", Description = "Italian durum wheat penne pasta", Category = "Pantry", BasePrice = 2.99m, DiscountPercent = 5, IsActive = true },
+                new Product { Name = "Extra Virgin Olive Oil", Description = "Cold-pressed extra virgin olive oil", Category = "Pantry", BasePrice = 12.99m, DiscountPercent = 8, IsActive = true },
+                new Product { Name = "Organic Eggs", Description = "Free-range organic eggs, dozen", Category = "Dairy", BasePrice = 6.99m, DiscountPercent = 0, IsActive = true },
+                new Product { Name = "Vanilla Ice Cream", Description = "Premium vanilla ice cream, half gallon", Category = "Frozen", BasePrice = 7.99m, DiscountPercent = 12, IsActive = true },
+                new Product { Name = "Frozen Blueberries", Description = "Wild frozen blueberries, antioxidant rich", Category = "Frozen", BasePrice = 5.49m, DiscountPercent = 0, IsActive = true },
+                new Product { Name = "Quinoa", Description = "Organic quinoa, superfood grain", Category = "Pantry", BasePrice = 8.99m, DiscountPercent = 10, IsActive = true },
+                new Product { Name = "Almond Butter", Description = "Natural almond butter, no added sugar", Category = "Pantry", BasePrice = 11.99m, DiscountPercent = 5, IsActive = true },
+                new Product { Name = "Orange Juice", Description = "Fresh squeezed orange juice, no pulp", Category = "Beverages", BasePrice = 4.99m, DiscountPercent = 0, IsActive = true },
+                new Product { Name = "Green Tea", Description = "Premium green tea bags, 20 count", Category = "Beverages", BasePrice = 6.49m, DiscountPercent = 15, IsActive = true },
+                new Product { Name = "Dark Chocolate Bar", Description = "70% cocoa dark chocolate bar", Category = "Snacks", BasePrice = 3.99m, DiscountPercent = 0, IsActive = true },
+                new Product { Name = "Mixed Nuts", Description = "Premium mixed nuts, lightly salted", Category = "Snacks", BasePrice = 9.99m, DiscountPercent = 8, IsActive = true }
+            };
+
+            await db.Products.AddRangeAsync(products);
+            await db.SaveChangesAsync();
+
+            // Create inventory for each product (after products are saved and have IDs)
+            var inventories = new List<Inventory>();
+            var savedProducts = await db.Products.ToListAsync();
+            foreach (var product in savedProducts)
+            {
+                var quantity = random.Next(10, 200);
+                var threshold = random.Next(5, 25);
+                inventories.Add(new Inventory
+                {
+                    ProductId = product.Id,
+                    Quantity = quantity,
+                    ReservedQuantity = random.Next(0, Math.Min(10, quantity)),
+                    LowStockThreshold = threshold,
+                    LowStockFlag = quantity < threshold,
+                    LastUpdatedAt = DateTime.UtcNow.AddDays(-random.Next(1, 30))
+                });
             }
+            await db.Inventories.AddRangeAsync(inventories);
+            await db.SaveChangesAsync();
 
-            if (!await db.Products.AnyAsync())
+            // Create some realistic orders with order items
+            var orders = new List<Order>();
+            var orderItems = new List<OrderItem>();
+            var savedUsers = await db.Users.ToListAsync();
+            
+            // Create 15 orders with various statuses
+            for (int i = 0; i < 15; i++)
             {
-                var product1 = new Product
+                var user = savedUsers[random.Next(savedUsers.Count)];
+                var orderProducts = savedProducts.OrderBy(x => random.Next()).Take(random.Next(1, 5)).ToList();
+                
+                var order = new Order
                 {
-                    Name = "Apple",
-                    BasePrice = 100,
-                    DiscountPercent = 5,
-                    IsActive = true
+                    UserId = user.Id,
+                    Status = (OrderStatus)(i % 5), // Cycle through statuses
+                    PaymentStatus = i % 3 == 0 ? PaymentStatus.Success : PaymentStatus.Pending,
+                    TotalPrice = 0, // Will calculate after adding items
+                    PaidAt = i % 3 == 0 ? DateTime.UtcNow.AddDays(-random.Next(1, 30)) : null,
+                    CreatedAt = DateTime.UtcNow.AddDays(-random.Next(1, 60))
                 };
-
-                var product2 = new Product
+                
+                decimal orderTotal = 0;
+                foreach (var product in orderProducts)
                 {
-                    Name = "Banana",
-                    BasePrice = 50,
-                    DiscountPercent = 0,
-                    IsActive = true
-                };
+                    var quantity = random.Next(1, 5);
+                    var unitPrice = product.BasePrice * (1 - product.DiscountPercent / 100m);
+                    var vipDiscount = user.IsVip ? 5 : 0;
+                    
+                    orderTotal += unitPrice * quantity;
+                    
+                    orderItems.Add(new OrderItem
+                    {
+                        OrderId = order.Id,
+                        ProductId = product.Id,
+                        UnitPrice = unitPrice,
+                        Quantity = quantity,
+                        ProductDiscountPercent = product.DiscountPercent,
+                        VipDiscountPercent = vipDiscount,
+                        CreatedAt = order.CreatedAt
+                    });
+                }
+                
+                order.TotalPrice = orderTotal;
+                orders.Add(order);
+            }
+            
+            await db.Orders.AddRangeAsync(orders);
+            await db.SaveChangesAsync();
+            await db.OrderItems.AddRangeAsync(orderItems);
+            await db.SaveChangesAsync();
 
-                var product3 = new Product
+            // Create VIP status history for VIP users
+            var vipHistories = new List<VipStatusHistory>();
+            var vipUsers = savedUsers.Where(u => u.IsVip).ToList();
+            
+            foreach (var vipUser in vipUsers)
+            {
+                vipHistories.Add(new VipStatusHistory
                 {
-                    Name = "Milk",
-                    BasePrice = 200,
-                    DiscountPercent = 10,
-                    IsActive = true
-                };
+                    UserId = vipUser.Id,
+                    PreviousTier = 0,
+                    NewTier = 1,
+                    TriggeringOrderTotal = random.Next(100, 500),
+                    TotalSpendingAtUpgrade = vipUser.TotalSpending,
+                    Reason = "Upgraded to VIP tier 1 after reaching spending threshold",
+                    CreatedAt = vipUser.VipUpgradedAt ?? DateTime.UtcNow.AddDays(-30)
+                });
+            }
+            
+            await db.VipStatusHistories.AddRangeAsync(vipHistories);
+            await db.SaveChangesAsync();
 
-                await db.Products.AddRangeAsync(product1, product2, product3);
-
-                // Seed inventory for each product
-                var inventory1 = new Inventory
+            // Create inventory transactions for some products
+            var transactions = new List<InventoryTransaction>();
+            var savedInventories = await db.Inventories.ToListAsync();
+            
+            foreach (var inventory in savedInventories.Take(10))
+            {
+                // Add a few transaction types
+                transactions.Add(new InventoryTransaction
                 {
-                    ProductId = product1.Id,
+                    InventoryId = inventory.Id,
+                    TransactionType = "INCREASE",
                     Quantity = 50,
-                    LowStockFlag = false,
-                    LastUpdatedAt = DateTime.UtcNow
-                };
-
-                var inventory2 = new Inventory
+                    PreviousQuantity = inventory.Quantity - 50,
+                    NewQuantity = inventory.Quantity,
+                    Reason = "Stock replenishment from supplier",
+                    UserId = "System",
+                    CreatedAt = DateTime.UtcNow.AddDays(-random.Next(5, 20))
+                });
+                
+                if (random.Next(2) == 0)
                 {
-                    ProductId = product2.Id,
-                    Quantity = 100,
-                    LowStockFlag = false,
-                    LastUpdatedAt = DateTime.UtcNow
-                };
-
-                var inventory3 = new Inventory
-                {
-                    ProductId = product3.Id,
-                    Quantity = 30,
-                    LowStockFlag = false,
-                    LastUpdatedAt = DateTime.UtcNow
-                };
-
-                await db.Inventories.AddRangeAsync(inventory1, inventory2, inventory3);
+                    transactions.Add(new InventoryTransaction
+                    {
+                        InventoryId = inventory.Id,
+                        TransactionType = "DECREASE",
+                        Quantity = 10,
+                        PreviousQuantity = inventory.Quantity + 10,
+                        NewQuantity = inventory.Quantity,
+                        Reason = "Damaged items removed from inventory",
+                        UserId = "Admin",
+                        CreatedAt = DateTime.UtcNow.AddDays(-random.Next(1, 10))
+                    });
+                }
             }
+            
+            await db.InventoryTransactions.AddRangeAsync(transactions);
+            await db.SaveChangesAsync();
 
+            // Create audit logs for some entities
+            var auditLogs = new List<AuditLog>();
+            
+            // Audit logs for user creations
+            foreach (var user in savedUsers.Take(5))
+            {
+                auditLogs.Add(new AuditLog
+                {
+                    EntityName = "User",
+                    EntityId = user.Id,
+                    Action = "CREATE",
+                    NewValues = $"{{\"FullName\":\"{user.FullName}\",\"Email\":\"{user.Email}\",\"IsVip\":{user.IsVip.ToString().ToLower()}}}",
+                    UserId = "System",
+                    Timestamp = user.CreatedAt,
+                    CreatedAt = user.CreatedAt
+                });
+            }
+            
+            // Audit logs for product updates
+            foreach (var product in savedProducts.Take(5))
+            {
+                auditLogs.Add(new AuditLog
+                {
+                    EntityName = "Product",
+                    EntityId = product.Id,
+                    Action = "UPDATE",
+                    OldValues = $"{{\"BasePrice\":{product.BasePrice - 1},\"DiscountPercent\":0}}",
+                    NewValues = $"{{\"BasePrice\":{product.BasePrice},\"DiscountPercent\":{product.DiscountPercent}}}",
+                    UserId = "Admin",
+                    Timestamp = DateTime.UtcNow.AddDays(-random.Next(1, 15)),
+                    CreatedAt = DateTime.UtcNow.AddDays(-random.Next(1, 15))
+                });
+            }
+            
+            // Audit logs for order creations
+            foreach (var order in orders.Take(5))
+            {
+                auditLogs.Add(new AuditLog
+                {
+                    EntityName = "Order",
+                    EntityId = order.Id,
+                    Action = "CREATE",
+                    NewValues = $"{{\"UserId\":\"{order.UserId}\",\"TotalPrice\":{order.TotalPrice},\"Status\":\"{order.Status}\"}}",
+                    UserId = order.UserId.ToString(),
+                    Timestamp = order.CreatedAt,
+                    CreatedAt = order.CreatedAt
+                });
+            }
+            
+            await db.AuditLogs.AddRangeAsync(auditLogs);
             await db.SaveChangesAsync();
         }
     }

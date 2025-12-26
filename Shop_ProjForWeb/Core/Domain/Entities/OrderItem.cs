@@ -6,5 +6,64 @@ public class OrderItem : BaseEntity
     public Guid ProductId { get; set; }
     public decimal UnitPrice { get; set; }
     public int Quantity { get; set; }
-    public int DiscountApplied { get; set; }
+    public int ProductDiscountPercent { get; set; }
+    public int VipDiscountPercent { get; set; }
+    
+    // Navigation Properties
+    public Order? Order { get; set; }
+    public Product? Product { get; set; }
+
+    public override void ValidateEntity()
+    {
+        base.ValidateEntity();
+        
+        if (OrderId == Guid.Empty)
+            throw new ArgumentException("OrderId cannot be empty");
+        
+        if (ProductId == Guid.Empty)
+            throw new ArgumentException("ProductId cannot be empty");
+        
+        ValidateDecimalProperty(UnitPrice, nameof(UnitPrice), minValue: 0);
+        ValidateIntProperty(Quantity, nameof(Quantity), minValue: 1);
+        ValidateIntProperty(ProductDiscountPercent, nameof(ProductDiscountPercent), minValue: 0, maxValue: 100);
+        ValidateIntProperty(VipDiscountPercent, nameof(VipDiscountPercent), minValue: 0, maxValue: 100);
+    }
+
+    public decimal GetTotalPrice()
+    {
+        return UnitPrice * Quantity;
+    }
+
+    public decimal GetDiscountAmount()
+    {
+        var baseAmount = UnitPrice * Quantity;
+        var productDiscountAmount = baseAmount * (ProductDiscountPercent / 100m);
+        var vipDiscountAmount = baseAmount * (VipDiscountPercent / 100m);
+        return productDiscountAmount + vipDiscountAmount;
+    }
+
+    public decimal GetFinalPrice()
+    {
+        return GetTotalPrice() - GetDiscountAmount();
+    }
+
+    public void UpdateQuantity(int newQuantity)
+    {
+        if (newQuantity <= 0)
+            throw new ArgumentException("Quantity must be greater than zero");
+        
+        Quantity = newQuantity;
+        UpdatedAt = DateTime.UtcNow;
+        ValidateEntity();
+    }
+
+    public void UpdateUnitPrice(decimal newUnitPrice)
+    {
+        if (newUnitPrice < 0)
+            throw new ArgumentException("Unit price cannot be negative");
+        
+        UnitPrice = newUnitPrice;
+        UpdatedAt = DateTime.UtcNow;
+        ValidateEntity();
+    }
 }

@@ -3,6 +3,9 @@ namespace Shop_ProjForWeb.Core.Domain.Enums;
 public enum OrderStatus
 {
     Created = 0,
-    Paid = 1,
-    Delivered = 2
+    Pending = 1,
+    Paid = 2,
+    Shipped = 3,
+    Delivered = 4,
+    Cancelled = 5
 }

@@ -1,18 +1,36 @@
 namespace Shop_ProjForWeb.Core.Application.Services;
 
-public class PricingService
+using Shop_ProjForWeb.Core.Domain.Interfaces;
+
+public class PricingService(IDiscountCalculator discountCalculator)
 {
-    private const decimal VipDiscountPercent = 10m;
+    private readonly IDiscountCalculator _discountCalculator = discountCalculator;
 
     public decimal CalculateFinalPrice(decimal basePrice, int productDiscountPercent, bool isVip)
     {
-        decimal priceAfterProductDiscount = basePrice * (1 - productDiscountPercent / 100m);
+        return _discountCalculator.CalculateFinalPrice(basePrice, productDiscountPercent, isVip);
+    }
 
-        if (isVip)
-        {
-            priceAfterProductDiscount = priceAfterProductDiscount * (1 - VipDiscountPercent / 100m);
-        }
+    /// <summary>
+    /// Calculates final price and returns both discount percentages for audit trail.
+    /// </summary>
+    public (decimal FinalPrice, int ProductDiscount, int VipDiscount) CalculateFinalPriceWithDiscounts(
+        decimal basePrice, int productDiscountPercent, bool isVip)
+    {
+        var breakdown = _discountCalculator.GetDiscountBreakdown(basePrice, productDiscountPercent, isVip);
+        
+        return (
+            breakdown.FinalPrice, 
+            (int)breakdown.ProductDiscountPercent, 
+            (int)breakdown.VipDiscountPercent
+        );
+    }
 
-        return priceAfterProductDiscount;
+    /// <summary>
+    /// Gets detailed discount breakdown for transparency and debugging.
+    /// </summary>
+    public DiscountBreakdown GetDiscountBreakdown(decimal basePrice, int productDiscountPercent, bool isVip)
+    {
+        return _discountCalculator.GetDiscountBreakdown(basePrice, productDiscountPercent, isVip);
     }
 }
