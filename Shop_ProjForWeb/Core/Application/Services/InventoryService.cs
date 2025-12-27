@@ -4,12 +4,10 @@ using Microsoft.EntityFrameworkCore;
 using Shop_ProjForWeb.Core.Application.DTOs;
 using Shop_ProjForWeb.Core.Application.Interfaces;
 using Shop_ProjForWeb.Core.Domain.Exceptions;
-using Shop_ProjForWeb.Core.Domain.ValueObjects;
 
 public class InventoryService(IInventoryRepository inventoryRepository) : IInventoryService
 {
     private readonly IInventoryRepository _inventoryRepository = inventoryRepository;
-    private readonly Dictionary<Guid, InventoryReservation> _reservations = new();
 
     public async Task DecreaseStockAsync(Guid productId, int quantity)
     {
@@ -94,10 +92,6 @@ public class InventoryService(IInventoryRepository inventoryRepository) : IInven
 
                 inventory.ReserveStock(quantity);
                 await _inventoryRepository.UpdateAsync(inventory);
-
-                // Create reservation record
-                var reservation = new InventoryReservation(productId, quantity);
-                _reservations[reservation.ReservationId] = reservation;
 
                 return true;
             }
@@ -254,51 +248,6 @@ public class InventoryService(IInventoryRepository inventoryRepository) : IInven
     {
         var items = await _inventoryRepository.GetLowStockItemsAsync();
         return items.Select(i => new InventoryDto
-        {
-            ProductId = i.ProductId,
-            ProductName = i.Product?.Name ?? "Unknown",
-            Quantity = i.AvailableQuantity,
-            LowStockFlag = i.LowStockFlag,
-            LastUpdatedAt = i.LastUpdatedAt
-        }).ToList();
-    }
-
-    public void CleanupExpiredReservations()
-    {
-        var expiredReservations = _reservations.Values
-            .Where(r => r.IsExpired && r.Status == ReservationStatus.Active)
-            .ToList();
-
-        foreach (var reservation in expiredReservations)
-        {
-            reservation.Status = ReservationStatus.Expired;
-            // In a real system, you'd also release the reserved stock
-            Task.Run(async () => await ReleaseStockAsync(reservation.ProductId, reservation.Quantity));
-        }
-    }
-
-    public async Task UpdateAllLowStockFlagsAsync()
-    {
-        var allInventories = await _inventoryRepository.GetAllAsync();
-        
-        foreach (var inventory in allInventories)
-        {
-            var oldFlag = inventory.LowStockFlag;
-            inventory.UpdateLowStockFlagManually();
-            
-            if (oldFlag != inventory.LowStockFlag)
-            {
-                await _inventoryRepository.UpdateAsync(inventory);
-            }
-        }
-    }
-
-    public async Task<List<InventoryDto>> GetCriticalStockItemsAsync(int criticalThreshold = 5)
-    {
-        var items = await _inventoryRepository.GetAllAsync();
-        var criticalItems = items.Where(i => i.AvailableQuantity <= criticalThreshold).ToList();
-        
-        return criticalItems.Select(i => new InventoryDto
         {
             ProductId = i.ProductId,
             ProductName = i.Product?.Name ?? "Unknown",

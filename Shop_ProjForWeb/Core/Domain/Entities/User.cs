@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace Shop_ProjForWeb.Core.Domain.Entities;
 
 public class User : BaseEntity
@@ -6,10 +8,16 @@ public class User : BaseEntity
     public string? Email { get; set; }
     public string? Phone { get; set; }
     public string? Address { get; set; }
-    public bool IsVip { get; set; }
+    
+    /// <summary>
+    /// Computed property - not stored in DB. VIP status is derived from VipTier.
+    /// </summary>
+    [NotMapped]
+    public bool IsVip => VipTier > 0;
+    
     public decimal TotalSpending { get; set; }
     public DateTime? VipUpgradedAt { get; set; }
-    public int VipTier { get; set; } = 0; // 0 = Regular, 1 = VIP
+    public int VipTier { get; set; } = 0; // 0 = Regular, 1+ = VIP
     
     // Navigation Properties
     public ICollection<Order> Orders { get; set; } = [];
@@ -41,13 +49,8 @@ public class User : BaseEntity
         ValidateDecimalProperty(TotalSpending, nameof(TotalSpending), minValue: 0);
         ValidateIntProperty(VipTier, nameof(VipTier), minValue: 0, maxValue: 10);
         
-        if (IsVip && VipTier == 0)
-            throw new InvalidOperationException("VIP users must have a VIP tier greater than 0");
-        
-        if (!IsVip && VipTier > 0)
-            throw new InvalidOperationException("Non-VIP users cannot have a VIP tier");
-        
-        if (IsVip && VipUpgradedAt == null)
+        // VIP users (tier > 0) must have an upgrade date
+        if (VipTier > 0 && VipUpgradedAt == null)
             throw new InvalidOperationException("VIP users must have a VipUpgradedAt date");
     }
 
@@ -62,51 +65,5 @@ public class User : BaseEntity
         {
             return false;
         }
-    }
-
-    public void UpdateTotalSpending(decimal orderTotal)
-    {
-        if (orderTotal < 0)
-            throw new ArgumentException("Order total cannot be negative");
-        
-        TotalSpending += orderTotal;
-        UpdatedAt = DateTime.UtcNow;
-        ValidateEntity();
-    }
-
-    public bool ShouldBeVip(decimal vipThreshold = 1000m)
-    {
-        return TotalSpending >= vipThreshold;
-    }
-
-    public void UpgradeToVip(decimal triggeringOrderTotal, string reason = "Spending threshold reached")
-    {
-        if (IsVip) return;
-
-        if (triggeringOrderTotal < 0)
-            throw new ArgumentException("Triggering order total cannot be negative");
-        
-        if (string.IsNullOrWhiteSpace(reason))
-            throw new ArgumentException("Reason for VIP upgrade is required");
-
-        var previousTier = VipTier;
-        IsVip = true;
-        VipTier = 1;
-        VipUpgradedAt = DateTime.UtcNow;
-        UpdatedAt = DateTime.UtcNow;
-
-        // Create history record
-        var history = new VipStatusHistory
-        {
-            UserId = Id,
-            PreviousTier = previousTier,
-            NewTier = VipTier,
-            TriggeringOrderTotal = triggeringOrderTotal,
-            TotalSpendingAtUpgrade = TotalSpending,
-            Reason = reason
-        };
-
-        VipHistory.Add(history);
-        ValidateEntity();
     }
 }

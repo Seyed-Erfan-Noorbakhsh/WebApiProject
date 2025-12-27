@@ -6,7 +6,6 @@ using Shop_ProjForWeb.Core.Domain.Entities;
 using Shop_ProjForWeb.Core.Domain.Enums;
 using Shop_ProjForWeb.Core.Domain.Exceptions;
 using Shop_ProjForWeb.Core.Domain.Interfaces;
-using Shop_ProjForWeb.Infrastructure.Persistent.DbContext;
 
 public class OrderService(
     IUnitOfWork unitOfWork,
@@ -77,8 +76,9 @@ public class OrderService(
                 foreach (var item in items)
                 {
                     var product = products[item.ProductId];
+                    // Use tier-based pricing for accurate VIP discounts
                     var (unitPrice, productDiscount, vipDiscount) = _pricingService.CalculateFinalPriceWithDiscounts(
-                        product.BasePrice, product.DiscountPercent, user.IsVip);
+                        product.BasePrice, product.DiscountPercent, user.VipTier);
 
                     var orderItem = new OrderItem
                     {

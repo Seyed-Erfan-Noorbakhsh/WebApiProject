@@ -50,15 +50,13 @@ public class TestRunner
             var users = await dbContext.Users.ToListAsync();
             var products = await dbContext.Products.Include(p => p.Inventory).ToListAsync();
             var vipHistory = await dbContext.VipStatusHistories.ToListAsync();
-            var inventoryTransactions = await dbContext.InventoryTransactions.ToListAsync();
-            var auditLogs = await dbContext.AuditLogs.ToListAsync();
 
             var passed = users.Count > 0 && products.Count > 0 && 
                         products.All(p => p.Inventory != null) &&
-                        vipHistory.Count > 0 && inventoryTransactions.Count > 0 && auditLogs.Count > 0;
+                        vipHistory.Count > 0;
 
             testResults.Add(("Database Seeding", passed, passed ? null : 
-                $"Users: {users.Count}, Products: {products.Count}, VIP History: {vipHistory.Count}, Transactions: {inventoryTransactions.Count}, Audit Logs: {auditLogs.Count}"));
+                $"Users: {users.Count}, Products: {products.Count}, VIP History: {vipHistory.Count}"));
             
             Console.WriteLine(passed ? "✅ Database Seeding PASSED" : "❌ Database Seeding FAILED");
             Console.WriteLine($"   📊 Users: {users.Count}, Products: {products.Count}, VIP History: {vipHistory.Count}");
@@ -190,30 +188,7 @@ public class TestRunner
             Console.WriteLine($"❌ Inventory Management FAILED: {ex.Message}");
         }
 
-        // Test 6: Audit Logging
-        try
-        {
-            Console.WriteLine("\n🔍 Testing Audit Logging...");
-            using var scope = factory.Services.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<SupermarketDbContext>();
-
-            var auditLogs = await dbContext.AuditLogs.ToListAsync();
-            var recentLogs = auditLogs.Where(a => a.Timestamp > DateTime.UtcNow.AddMinutes(-5)).ToList();
-
-            var passed = auditLogs.Count > 0;
-
-            testResults.Add(("Audit Logging", passed, passed ? null : $"Total Logs: {auditLogs.Count}"));
-            
-            Console.WriteLine(passed ? "✅ Audit Logging PASSED" : "❌ Audit Logging FAILED");
-            Console.WriteLine($"   📝 Total Audit Logs: {auditLogs.Count}, Recent: {recentLogs.Count}");
-        }
-        catch (Exception ex)
-        {
-            testResults.Add(("Audit Logging", false, ex.Message));
-            Console.WriteLine($"❌ Audit Logging FAILED: {ex.Message}");
-        }
-
-        // Test 7: Low Stock Detection
+        // Test 6: Low Stock Detection
         try
         {
             Console.WriteLine("\n🔍 Testing Low Stock Detection...");

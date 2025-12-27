@@ -28,42 +28,4 @@ public class OrderItem : BaseEntity
         ValidateIntProperty(ProductDiscountPercent, nameof(ProductDiscountPercent), minValue: 0, maxValue: 100);
         ValidateIntProperty(VipDiscountPercent, nameof(VipDiscountPercent), minValue: 0, maxValue: 100);
     }
-
-    public decimal GetTotalPrice()
-    {
-        return UnitPrice * Quantity;
-    }
-
-    public decimal GetDiscountAmount()
-    {
-        var baseAmount = UnitPrice * Quantity;
-        var productDiscountAmount = baseAmount * (ProductDiscountPercent / 100m);
-        var vipDiscountAmount = baseAmount * (VipDiscountPercent / 100m);
-        return productDiscountAmount + vipDiscountAmount;
-    }
-
-    public decimal GetFinalPrice()
-    {
-        return GetTotalPrice() - GetDiscountAmount();
-    }
-
-    public void UpdateQuantity(int newQuantity)
-    {
-        if (newQuantity <= 0)
-            throw new ArgumentException("Quantity must be greater than zero");
-        
-        Quantity = newQuantity;
-        UpdatedAt = DateTime.UtcNow;
-        ValidateEntity();
-    }
-
-    public void UpdateUnitPrice(decimal newUnitPrice)
-    {
-        if (newUnitPrice < 0)
-            throw new ArgumentException("Unit price cannot be negative");
-        
-        UnitPrice = newUnitPrice;
-        UpdatedAt = DateTime.UtcNow;
-        ValidateEntity();
-    }
 }

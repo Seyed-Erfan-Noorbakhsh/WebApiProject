@@ -14,10 +14,11 @@ public class UserService(
 
     public async Task<UserDto> CreateUserAsync(CreateUserDto dto)
     {
+        // Note: IsVip is now a computed property (VipTier > 0), not set directly
         var user = new User
         {
             FullName = dto.FullName,
-            IsVip = false
+            VipTier = 0 // New users start as non-VIP
         };
 
         await _userRepository.AddAsync(user);

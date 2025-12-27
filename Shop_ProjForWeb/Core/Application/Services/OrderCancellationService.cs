@@ -9,14 +9,12 @@ public class OrderCancellationService(
     IUnitOfWork unitOfWork,
     IInventoryService inventoryService,
     VipUpgradeService vipUpgradeService,
-    IOrderStateMachine orderStateMachine,
-    AuditService auditService) : IOrderCancellationService
+    IOrderStateMachine orderStateMachine) : IOrderCancellationService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IInventoryService _inventoryService = inventoryService;
     private readonly VipUpgradeService _vipUpgradeService = vipUpgradeService;
     private readonly IOrderStateMachine _orderStateMachine = orderStateMachine;
-    private readonly AuditService _auditService = auditService;
 
     public async Task CancelOrderAsync(Guid orderId)
     {
@@ -69,14 +67,6 @@ public class OrderCancellationService(
             order.ChangeStatus(OrderStatus.Cancelled, _orderStateMachine);
             await _unitOfWork.Orders.UpdateAsync(order);
 
-            // Create audit log for cancellation
-            await _auditService.LogAsync(
-                "Order", 
-                orderId, 
-                "Cancelled", 
-                $"Order cancelled. Original status: {originalStatus}, Total: {originalTotal:C}. " +
-                $"Restored inventory for {restoredItems.Count} items.");
-
             // Recalculate VIP status if this was a paid order (affects total paid amount)
             if (originalStatus == OrderStatus.Paid)
             {
@@ -94,32 +84,5 @@ public class OrderCancellationService(
             Console.WriteLine($"Order {orderId} cancelled successfully. Restored inventory for products: " +
                             string.Join(", ", restoredItems.Select(r => $"{r.ProductName} ({r.Quantity})")));
         });
-    }
-
-    public async Task<bool> CanCancelOrderAsync(Guid orderId)
-    {
-        var order = await _unitOfWork.Orders.GetByIdAsync(orderId);
-        if (order == null)
-        {
-            return false;
-        }
-
-        return _orderStateMachine.CanBeCancelled(order.Status);
-    }
-
-    public async Task<string> GetCancellationReasonAsync(Guid orderId)
-    {
-        var order = await _unitOfWork.Orders.GetByIdAsync(orderId);
-        if (order == null)
-        {
-            return "Order not found";
-        }
-
-        if (_orderStateMachine.CanBeCancelled(order.Status))
-        {
-            return "Order can be cancelled";
-        }
-
-        return $"Order cannot be cancelled from status '{order.Status}' ({_orderStateMachine.GetStatusDescription(order.Status)})";
     }
 }

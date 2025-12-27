@@ -12,7 +12,7 @@ public class Order : BaseEntity
     
     // Navigation Properties
     public User? User { get; set; }
-    public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+    public ICollection<OrderItem> OrderItems { get; set; } = [];
 
     public override void ValidateEntity()
     {
@@ -88,25 +88,5 @@ public class Order : BaseEntity
         {
             throw new InvalidOperationException($"Order total price ({TotalPrice}) does not match sum of order items ({calculatedTotal})");
         }
-    }
-
-    public void UpdateTotalPrice()
-    {
-        TotalPrice = OrderItems.Sum(oi => oi.UnitPrice * oi.Quantity);
-        UpdatedAt = DateTime.UtcNow;
-        ValidateEntity();
-    }
-
-    public void Cancel(string reason = "Order cancelled")
-    {
-        if (!CanBeCancelled())
-            throw new InvalidOperationException($"Order with status {Status} cannot be cancelled");
-        
-        if (string.IsNullOrWhiteSpace(reason))
-            throw new ArgumentException("Cancellation reason is required");
-        
-        Status = OrderStatus.Cancelled;
-        UpdatedAt = DateTime.UtcNow;
-        ValidateEntity();
     }
 }

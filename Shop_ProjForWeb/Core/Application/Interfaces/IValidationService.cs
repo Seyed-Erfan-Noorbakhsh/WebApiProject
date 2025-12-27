@@ -11,10 +11,3 @@ public interface IValidationService
     ValidationResult ValidatePositive(decimal value, string fieldName);
     ValidationResult ValidatePercentage(int value, string fieldName);
 }
-
-public class BusinessValidationResult
-{
-    public bool IsValid { get; set; }
-    public List<string> Errors { get; set; } = new();
-    public Dictionary<string, string[]> ValidationErrors { get; set; } = new();
-}

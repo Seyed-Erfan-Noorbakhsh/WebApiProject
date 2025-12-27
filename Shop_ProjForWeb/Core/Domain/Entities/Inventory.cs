@@ -11,7 +11,6 @@ public class Inventory : BaseEntity
     
     // Navigation Properties
     public Product? Product { get; set; }
-    public ICollection<InventoryTransaction> Transactions { get; set; } = [];
 
     public int AvailableQuantity => Quantity - ReservedQuantity;
 
@@ -110,22 +109,6 @@ public class Inventory : BaseEntity
         ValidateEntity();
     }
 
-    public void ValidateStock()
-    {
-        if (Quantity < 0)
-            throw new InvalidOperationException("Stock quantity cannot be negative");
-        if (ReservedQuantity < 0)
-            throw new InvalidOperationException("Reserved quantity cannot be negative");
-        if (ReservedQuantity > Quantity)
-            throw new InvalidOperationException("Reserved quantity cannot exceed total quantity");
-    }
-
-    private void UpdateLowStockFlag()
-    {
-        // Use available quantity (total - reserved) for low stock calculation
-        LowStockFlag = AvailableQuantity <= LowStockThreshold;
-    }
-
     public void UpdateLowStockFlagManually()
     {
         UpdateLowStockFlag();
@@ -133,15 +116,9 @@ public class Inventory : BaseEntity
         ValidateEntity();
     }
 
-    public void UpdateThreshold(int newThreshold)
+    private void UpdateLowStockFlag()
     {
-        if (newThreshold < 0)
-            throw new ArgumentException("Low stock threshold cannot be negative");
-        
-        LowStockThreshold = newThreshold;
-        UpdateLowStockFlag();
-        LastUpdatedAt = DateTime.UtcNow;
-        UpdatedAt = DateTime.UtcNow;
-        ValidateEntity();
+        // Use available quantity (total - reserved) for low stock calculation
+        LowStockFlag = AvailableQuantity <= LowStockThreshold;
     }
 }

@@ -1,54 +1,39 @@
-using Shop_ProjForWeb.Core.Domain.Entities;
 using Shop_ProjForWeb.Core.Domain.Interfaces;
 
 namespace Shop_ProjForWeb.Core.Application.Services;
 
 public class VipStatusCalculator : IVipStatusCalculator
 {
-    private const decimal VipUpgradeThreshold = 10000m;
-    private const decimal VipDowngradeThreshold = 8000m; // Hysteresis gap
-
-    public bool ShouldBeVip(decimal totalPaidAmount, bool currentVipStatus)
+    /// <summary>
+    /// Calculates the VIP tier based on total spending amount.
+    /// Tier 0: 0-999.99, Tier 1: 1000-4999.99, Tier 2: 5000-29999.99, Tier 3: 30000+
+    /// </summary>
+    public int CalculateTier(decimal totalSpending)
     {
-        // Upgrade logic: Non-VIP becomes VIP at 10000
-        if (!currentVipStatus && totalPaidAmount >= VipUpgradeThreshold)
-        {
-            return true;
-        }
-
-        // Downgrade logic: VIP becomes non-VIP below 8000
-        if (currentVipStatus && totalPaidAmount < VipDowngradeThreshold)
-        {
-            return false;
-        }
-
-        // Hysteresis: Maintain current status between 8000-10000
-        return currentVipStatus;
+        if (totalSpending < 0)
+            throw new ArgumentException("Total spending cannot be negative", nameof(totalSpending));
+            
+        if (totalSpending >= IVipStatusCalculator.Tier3Threshold) return 3;
+        if (totalSpending >= IVipStatusCalculator.Tier2Threshold) return 2;
+        if (totalSpending >= IVipStatusCalculator.Tier1Threshold) return 1;
+        return 0;
     }
-
-    public VipStatusChange CalculateStatusChange(User user, decimal newTotalAmount)
+    
+    /// <summary>
+    /// Gets the discount percentage for a given VIP tier.
+    /// Tier 0: 0%, Tier 1: 10%, Tier 2: 15%, Tier 3: 20%
+    /// </summary>
+    public int GetDiscountPercentForTier(int tier)
     {
-        var newVipStatus = ShouldBeVip(newTotalAmount, user.IsVip);
-        var statusChanged = newVipStatus != user.IsVip;
-
-        string reason = "";
-        if (statusChanged)
+        if (tier < 0 || tier > 3)
+            throw new ArgumentException("Tier must be between 0 and 3", nameof(tier));
+            
+        return tier switch
         {
-            if (newVipStatus)
-            {
-                reason = $"Upgraded to VIP: Total spending ${newTotalAmount:F2} reached threshold ${VipUpgradeThreshold:F2}";
-            }
-            else
-            {
-                reason = $"Downgraded from VIP: Total spending ${newTotalAmount:F2} fell below threshold ${VipDowngradeThreshold:F2}";
-            }
-        }
-
-        return new VipStatusChange
-        {
-            NewVipStatus = newVipStatus,
-            StatusChanged = statusChanged,
-            Reason = reason
+            1 => IVipStatusCalculator.Tier1Discount,
+            2 => IVipStatusCalculator.Tier2Discount,
+            3 => IVipStatusCalculator.Tier3Discount,
+            _ => 0
         };
     }
 }

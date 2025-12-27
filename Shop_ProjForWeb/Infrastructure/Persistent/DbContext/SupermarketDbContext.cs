@@ -11,9 +11,7 @@ public class SupermarketDbContext(DbContextOptions<SupermarketDbContext> options
     public required DbSet<Inventory> Inventories { get; set; }
     public required DbSet<Order> Orders { get; set; }
     public required DbSet<OrderItem> OrderItems { get; set; }
-    public required DbSet<AuditLog> AuditLogs { get; set; }
     public required DbSet<VipStatusHistory> VipStatusHistories { get; set; }
-    public required DbSet<InventoryTransaction> InventoryTransactions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,7 +38,7 @@ public class SupermarketDbContext(DbContextOptions<SupermarketDbContext> options
             entity.Property(e => e.Email).IsRequired(false);
             entity.Property(e => e.Phone).IsRequired(false);
             entity.Property(e => e.Address).IsRequired(false);
-            entity.Property(e => e.IsVip).IsRequired();
+            // IsVip is now a computed property [NotMapped], not stored in DB
             entity.Property(e => e.TotalSpending).IsRequired().HasPrecision(18, 2);
             entity.Property(e => e.VipUpgradedAt).IsRequired(false);
             entity.Property(e => e.VipTier).IsRequired();
@@ -117,12 +115,6 @@ public class SupermarketDbContext(DbContextOptions<SupermarketDbContext> options
                 .HasForeignKey<Inventory>(i => i.ProductId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
-
-            // One-to-Many: Inventory -> InventoryTransactions
-            entity.HasMany(i => i.Transactions)
-                .WithOne(t => t.Inventory)
-                .HasForeignKey(t => t.InventoryId)
-                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Order Configuration
@@ -167,28 +159,6 @@ public class SupermarketDbContext(DbContextOptions<SupermarketDbContext> options
             entity.Property(e => e.DeletedAt).IsRequired(false);
         });
 
-        // AuditLog Configuration
-        modelBuilder.Entity<AuditLog>(entity =>
-        {
-            entity.ToTable("AuditLogs");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.EntityName).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.EntityId).IsRequired();
-            entity.Property(e => e.Action).IsRequired().HasMaxLength(50);
-            entity.Property(e => e.OldValues).IsRequired(false);
-            entity.Property(e => e.NewValues).IsRequired(false);
-            entity.Property(e => e.UserId).IsRequired(false).HasMaxLength(100);
-            entity.Property(e => e.Timestamp).IsRequired();
-            entity.Property(e => e.CreatedAt).IsRequired();
-            entity.Property(e => e.UpdatedAt).IsRequired();
-            entity.Property(e => e.IsDeleted).IsRequired().HasDefaultValue(false);
-            entity.Property(e => e.DeletedAt).IsRequired(false);
-            
-            // Index for performance
-            entity.HasIndex(e => new { e.EntityName, e.EntityId });
-            entity.HasIndex(e => e.Timestamp);
-        });
-
         // VipStatusHistory Configuration
         modelBuilder.Entity<VipStatusHistory>(entity =>
         {
@@ -207,42 +177,6 @@ public class SupermarketDbContext(DbContextOptions<SupermarketDbContext> options
             
             // Index for performance
             entity.HasIndex(e => e.UserId);
-            entity.HasIndex(e => e.CreatedAt);
-        });
-
-        // InventoryTransaction Configuration
-        modelBuilder.Entity<InventoryTransaction>(entity =>
-        {
-            entity.ToTable("InventoryTransactions");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.InventoryId).IsRequired();
-            entity.Property(e => e.TransactionType).IsRequired().HasMaxLength(20);
-            entity.Property(e => e.Quantity).IsRequired();
-            entity.Property(e => e.PreviousQuantity).IsRequired();
-            entity.Property(e => e.NewQuantity).IsRequired();
-            entity.Property(e => e.Reason).IsRequired().HasMaxLength(500);
-            entity.Property(e => e.RelatedOrderId).IsRequired(false);
-            entity.Property(e => e.UserId).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.CreatedAt).IsRequired();
-            entity.Property(e => e.UpdatedAt).IsRequired();
-            entity.Property(e => e.IsDeleted).IsRequired().HasDefaultValue(false);
-            entity.Property(e => e.DeletedAt).IsRequired(false);
-            
-            // Foreign key relationships
-            entity.HasOne(t => t.Inventory)
-                .WithMany(i => i.Transactions)
-                .HasForeignKey(t => t.InventoryId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasOne(t => t.RelatedOrder)
-                .WithMany()
-                .HasForeignKey(t => t.RelatedOrderId)
-                .OnDelete(DeleteBehavior.SetNull);
-            
-            // Indexes for performance
-            entity.HasIndex(e => e.InventoryId);
-            entity.HasIndex(e => e.RelatedOrderId);
-            entity.HasIndex(e => e.TransactionType);
             entity.HasIndex(e => e.CreatedAt);
         });
     }

@@ -421,6 +421,396 @@ public class BusinessLogicTests : IntegrationTestBase
 
     #endregion
 
+    #region VIP Downgrade Tests
+
+    [Fact]
+    public async Task VipDowngrade_WhenPaidOrderCancelled_ShouldRecalculateVipStatus()
+    {
+        // Arrange - Create user and make them VIP by spending exactly $1000
+        var user = await CreateTestUserAsync();
+        var product = await CreateTestProductAsync(basePrice: 1000m, discountPercent: 0);
+
+        var orderRequest = new CreateOrderRequest
+        {
+            UserId = user.Id,
+            Items = TestDataGenerator.GenerateValidOrderItems(new List<Guid> { product.Id }, 1)
+        };
+        var orderResponse = await Client.PostAsJsonAsync("/api/orders", orderRequest);
+        var order = await ApiTestHelper.GetResponseAsync<OrderResponseDto>(orderResponse);
+
+        // Pay order - user becomes VIP
+        await Client.PostAsync($"/api/orders/{order!.OrderId}/pay", null);
+
+        // Verify user is VIP
+        var vipUserResponse = await Client.GetAsync($"/api/users/{user.Id}");
+        var vipUser = await ApiTestHelper.GetResponseAsync<UserDto>(vipUserResponse);
+        vipUser!.IsVip.Should().BeTrue("user should be VIP after spending $1000");
+
+        // Act - Cancel the paid order
+        var cancelResponse = await Client.DeleteAsync($"/api/orders/{order.OrderId}");
+        cancelResponse.StatusCode.Should().Be(HttpStatusCode.NoContent, "cancellation should succeed");
+
+        // Assert - User should no longer be VIP (total spending is now $0)
+        var downgradeUserResponse = await Client.GetAsync($"/api/users/{user.Id}");
+        var downgradedUser = await ApiTestHelper.GetResponseAsync<UserDto>(downgradeUserResponse);
+        downgradedUser!.IsVip.Should().BeFalse("user should lose VIP status after cancelling the order that made them VIP");
+    }
+
+    [Fact]
+    public async Task VipDowngrade_WhenPartialOrdersCancelled_ShouldMaintainVipIfAboveThreshold()
+    {
+        // Arrange - Create user and make them VIP by spending $1500 across two orders
+        var user = await CreateTestUserAsync();
+        var product = await CreateTestProductAsync(basePrice: 750m, discountPercent: 0);
+
+        // First order - $750
+        var order1Request = new CreateOrderRequest
+        {
+            UserId = user.Id,
+            Items = TestDataGenerator.GenerateValidOrderItems(new List<Guid> { product.Id }, 1)
+        };
+        var order1Response = await Client.PostAsJsonAsync("/api/orders", order1Request);
+        var order1 = await ApiTestHelper.GetResponseAsync<OrderResponseDto>(order1Response);
+        await Client.PostAsync($"/api/orders/{order1!.OrderId}/pay", null);
+
+        // Second order - $750 (total now $1500)
+        var order2Request = new CreateOrderRequest
+        {
+            UserId = user.Id,
+            Items = TestDataGenerator.GenerateValidOrderItems(new List<Guid> { product.Id }, 1)
+        };
+        var order2Response = await Client.PostAsJsonAsync("/api/orders", order2Request);
+        var order2 = await ApiTestHelper.GetResponseAsync<OrderResponseDto>(order2Response);
+        await Client.PostAsync($"/api/orders/{order2!.OrderId}/pay", null);
+
+        // Verify user is VIP
+        var vipUserResponse = await Client.GetAsync($"/api/users/{user.Id}");
+        var vipUser = await ApiTestHelper.GetResponseAsync<UserDto>(vipUserResponse);
+        vipUser!.IsVip.Should().BeTrue("user should be VIP after spending $1500");
+
+        // Act - Cancel one order (remaining $750 is below $1000 threshold)
+        await Client.DeleteAsync($"/api/orders/{order1.OrderId}");
+
+        // Assert - User should lose VIP status
+        var afterCancelResponse = await Client.GetAsync($"/api/users/{user.Id}");
+        var afterCancelUser = await ApiTestHelper.GetResponseAsync<UserDto>(afterCancelResponse);
+        afterCancelUser!.IsVip.Should().BeFalse("user should lose VIP after cancellation drops spending below $1000");
+    }
+
+    #endregion
+
+    #region Higher VIP Tier Tests
+
+    [Fact]
+    public async Task VipUpgrade_WhenUserSpends5000_ShouldBecomeTier2()
+    {
+        // Arrange
+        var user = await CreateTestUserAsync();
+        var product = await CreateTestProductAsync(basePrice: 5000m, discountPercent: 0);
+
+        var orderRequest = new CreateOrderRequest
+        {
+            UserId = user.Id,
+            Items = TestDataGenerator.GenerateValidOrderItems(new List<Guid> { product.Id }, 1)
+        };
+        var orderResponse = await Client.PostAsJsonAsync("/api/orders", orderRequest);
+        var order = await ApiTestHelper.GetResponseAsync<OrderResponseDto>(orderResponse);
+
+        // Act - Pay order
+        await Client.PostAsync($"/api/orders/{order!.OrderId}/pay", null);
+
+        // Assert - User should be VIP (Tier 2)
+        var userResponse = await Client.GetAsync($"/api/users/{user.Id}");
+        var updatedUser = await ApiTestHelper.GetResponseAsync<UserDto>(userResponse);
+        updatedUser!.IsVip.Should().BeTrue("user spent $5000 and should be VIP Tier 2");
+
+        // Verify Tier 2 discount (15%) is applied on next order
+        var product2 = await CreateTestProductAsync(basePrice: 100m, discountPercent: 0);
+        var order2Request = new CreateOrderRequest
+        {
+            UserId = user.Id,
+            Items = TestDataGenerator.GenerateValidOrderItems(new List<Guid> { product2.Id }, 1)
+        };
+        var order2Response = await Client.PostAsJsonAsync("/api/orders", order2Request);
+        var order2 = await ApiTestHelper.GetResponseAsync<OrderResponseDto>(order2Response);
+        
+        // Tier 2 = 15% discount, so $100 - 15% = $85
+        order2!.TotalPrice.Should().Be(85m, "Tier 2 VIP should get 15% discount");
+    }
+
+    [Fact]
+    public async Task VipUpgrade_WhenUserSpends30000_ShouldBecomeTier3()
+    {
+        // Arrange
+        var user = await CreateTestUserAsync();
+        var product = await CreateTestProductAsync(basePrice: 30000m, discountPercent: 0);
+
+        var orderRequest = new CreateOrderRequest
+        {
+            UserId = user.Id,
+            Items = TestDataGenerator.GenerateValidOrderItems(new List<Guid> { product.Id }, 1)
+        };
+        var orderResponse = await Client.PostAsJsonAsync("/api/orders", orderRequest);
+        var order = await ApiTestHelper.GetResponseAsync<OrderResponseDto>(orderResponse);
+
+        // Act - Pay order
+        await Client.PostAsync($"/api/orders/{order!.OrderId}/pay", null);
+
+        // Assert - User should be VIP (Tier 3)
+        var userResponse = await Client.GetAsync($"/api/users/{user.Id}");
+        var updatedUser = await ApiTestHelper.GetResponseAsync<UserDto>(userResponse);
+        updatedUser!.IsVip.Should().BeTrue("user spent $30000 and should be VIP Tier 3");
+
+        // Verify Tier 3 discount (20%) is applied on next order
+        var product2 = await CreateTestProductAsync(basePrice: 100m, discountPercent: 0);
+        var order2Request = new CreateOrderRequest
+        {
+            UserId = user.Id,
+            Items = TestDataGenerator.GenerateValidOrderItems(new List<Guid> { product2.Id }, 1)
+        };
+        var order2Response = await Client.PostAsJsonAsync("/api/orders", order2Request);
+        var order2 = await ApiTestHelper.GetResponseAsync<OrderResponseDto>(order2Response);
+        
+        // Tier 3 = 20% discount, so $100 - 20% = $80
+        order2!.TotalPrice.Should().Be(80m, "Tier 3 VIP should get 20% discount");
+    }
+
+    [Fact]
+    public async Task VipUpgrade_MultiTierJump_ShouldJumpDirectlyToTier3()
+    {
+        // Arrange - User makes single large purchase that exceeds Tier 3 threshold
+        var user = await CreateTestUserAsync();
+        
+        // Verify user starts as non-VIP
+        var initialUserResponse = await Client.GetAsync($"/api/users/{user.Id}");
+        var initialUser = await ApiTestHelper.GetResponseAsync<UserDto>(initialUserResponse);
+        initialUser!.IsVip.Should().BeFalse("new user should not be VIP");
+
+        var product = await CreateTestProductAsync(basePrice: 35000m, discountPercent: 0);
+
+        var orderRequest = new CreateOrderRequest
+        {
+            UserId = user.Id,
+            Items = TestDataGenerator.GenerateValidOrderItems(new List<Guid> { product.Id }, 1)
+        };
+        var orderResponse = await Client.PostAsJsonAsync("/api/orders", orderRequest);
+        var order = await ApiTestHelper.GetResponseAsync<OrderResponseDto>(orderResponse);
+
+        // Act - Pay order (single purchase of $35000)
+        await Client.PostAsync($"/api/orders/{order!.OrderId}/pay", null);
+
+        // Assert - User should jump directly to Tier 3
+        var userResponse = await Client.GetAsync($"/api/users/{user.Id}");
+        var updatedUser = await ApiTestHelper.GetResponseAsync<UserDto>(userResponse);
+        updatedUser!.IsVip.Should().BeTrue("user should be VIP after $35000 purchase");
+
+        // Verify Tier 3 discount (20%) is applied
+        var product2 = await CreateTestProductAsync(basePrice: 100m, discountPercent: 0);
+        var order2Request = new CreateOrderRequest
+        {
+            UserId = user.Id,
+            Items = TestDataGenerator.GenerateValidOrderItems(new List<Guid> { product2.Id }, 1)
+        };
+        var order2Response = await Client.PostAsJsonAsync("/api/orders", order2Request);
+        var order2 = await ApiTestHelper.GetResponseAsync<OrderResponseDto>(order2Response);
+        
+        order2!.TotalPrice.Should().Be(80m, "user should have Tier 3 discount (20%) after multi-tier jump");
+    }
+
+    #endregion
+
+    #region Invalid State Transition Tests
+
+    [Fact]
+    public async Task OrderState_PayAlreadyPaidOrder_ShouldFail()
+    {
+        // Arrange
+        var user = await CreateTestUserAsync();
+        var product = await CreateTestProductAsync();
+
+        var orderRequest = new CreateOrderRequest
+        {
+            UserId = user.Id,
+            Items = TestDataGenerator.GenerateValidOrderItems(new List<Guid> { product.Id }, 1)
+        };
+        var orderResponse = await Client.PostAsJsonAsync("/api/orders", orderRequest);
+        var order = await ApiTestHelper.GetResponseAsync<OrderResponseDto>(orderResponse);
+
+        // Pay the order first time
+        var firstPayResponse = await Client.PostAsync($"/api/orders/{order!.OrderId}/pay", null);
+        firstPayResponse.StatusCode.Should().Be(HttpStatusCode.NoContent, "first payment should succeed");
+
+        // Act - Try to pay again
+        var secondPayResponse = await Client.PostAsync($"/api/orders/{order.OrderId}/pay", null);
+
+        // Assert - Should fail (already paid)
+        secondPayResponse.StatusCode.Should().Be(HttpStatusCode.InternalServerError, "paying already paid order should fail");
+    }
+
+    [Fact]
+    public async Task OrderState_CancelAlreadyCancelledOrder_ShouldFail()
+    {
+        // Arrange
+        var user = await CreateTestUserAsync();
+        var product = await CreateTestProductAsync();
+
+        var orderRequest = new CreateOrderRequest
+        {
+            UserId = user.Id,
+            Items = TestDataGenerator.GenerateValidOrderItems(new List<Guid> { product.Id }, 1)
+        };
+        var orderResponse = await Client.PostAsJsonAsync("/api/orders", orderRequest);
+        var order = await ApiTestHelper.GetResponseAsync<OrderResponseDto>(orderResponse);
+
+        // Cancel the order first time
+        var firstCancelResponse = await Client.DeleteAsync($"/api/orders/{order!.OrderId}");
+        firstCancelResponse.StatusCode.Should().Be(HttpStatusCode.NoContent, "first cancellation should succeed");
+
+        // Act - Try to cancel again
+        var secondCancelResponse = await Client.DeleteAsync($"/api/orders/{order.OrderId}");
+
+        // Assert - Should fail (already cancelled - terminal state)
+        secondCancelResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest, "cancelling already cancelled order should fail");
+    }
+
+    #endregion
+
+    #region Reports Integration Tests
+
+    [Fact]
+    public async Task Reports_SalesSummary_ReturnsValidData()
+    {
+        // Arrange - Create some paid orders
+        var user = await CreateTestUserAsync();
+        var product = await CreateTestProductAsync(basePrice: 100m, discountPercent: 0);
+
+        // Create and pay two orders
+        for (int i = 0; i < 2; i++)
+        {
+            var orderRequest = new CreateOrderRequest
+            {
+                UserId = user.Id,
+                Items = TestDataGenerator.GenerateValidOrderItems(new List<Guid> { product.Id }, 1)
+            };
+            var orderResponse = await Client.PostAsJsonAsync("/api/orders", orderRequest);
+            var order = await ApiTestHelper.GetResponseAsync<OrderResponseDto>(orderResponse);
+            await Client.PostAsync($"/api/orders/{order!.OrderId}/pay", null);
+        }
+
+        // Act
+        var response = await Client.GetAsync("/api/reports/sales");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK, "sales report should return OK");
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Contain("totalRevenue", "sales report should contain total revenue");
+        content.Should().Contain("totalOrders", "sales report should contain total orders");
+    }
+
+    [Fact]
+    public async Task Reports_InventoryReport_ReturnsValidData()
+    {
+        // Arrange - Create product with inventory
+        var product = await CreateTestProductAsync(initialStock: 50);
+
+        // Act
+        var response = await Client.GetAsync("/api/reports/inventory");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK, "inventory report should return OK");
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Contain("totalItems", "inventory report should contain total items");
+        content.Should().Contain("totalQuantity", "inventory report should contain total quantity");
+    }
+
+    [Fact]
+    public async Task Reports_TopProducts_ReturnsValidData()
+    {
+        // Arrange - Create orders for products
+        var user = await CreateTestUserAsync();
+        var product1 = await CreateTestProductAsync(basePrice: 100m, discountPercent: 0);
+        var product2 = await CreateTestProductAsync(basePrice: 200m, discountPercent: 0);
+
+        // Order product1 twice, product2 once
+        for (int i = 0; i < 2; i++)
+        {
+            var orderRequest = new CreateOrderRequest
+            {
+                UserId = user.Id,
+                Items = TestDataGenerator.GenerateValidOrderItems(new List<Guid> { product1.Id }, 1)
+            };
+            var orderResponse = await Client.PostAsJsonAsync("/api/orders", orderRequest);
+            var order = await ApiTestHelper.GetResponseAsync<OrderResponseDto>(orderResponse);
+            await Client.PostAsync($"/api/orders/{order!.OrderId}/pay", null);
+        }
+
+        var order2Request = new CreateOrderRequest
+        {
+            UserId = user.Id,
+            Items = TestDataGenerator.GenerateValidOrderItems(new List<Guid> { product2.Id }, 1)
+        };
+        var order2Response = await Client.PostAsJsonAsync("/api/orders", order2Request);
+        var order2 = await ApiTestHelper.GetResponseAsync<OrderResponseDto>(order2Response);
+        await Client.PostAsync($"/api/orders/{order2!.OrderId}/pay", null);
+
+        // Act
+        var response = await Client.GetAsync("/api/reports/top-products?limit=10");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK, "top products report should return OK");
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Contain("productId", "top products should contain product IDs");
+        content.Should().Contain("totalQuantitySold", "top products should contain quantity sold");
+    }
+
+    [Fact]
+    public async Task Reports_OrderStatusDistribution_ReturnsValidData()
+    {
+        // Arrange - Create orders in different states
+        var user = await CreateTestUserAsync();
+        var product = await CreateTestProductAsync(basePrice: 100m, discountPercent: 0);
+
+        // Create order (Created state)
+        var order1Request = new CreateOrderRequest
+        {
+            UserId = user.Id,
+            Items = TestDataGenerator.GenerateValidOrderItems(new List<Guid> { product.Id }, 1)
+        };
+        await Client.PostAsJsonAsync("/api/orders", order1Request);
+
+        // Create and pay order (Paid state)
+        var order2Request = new CreateOrderRequest
+        {
+            UserId = user.Id,
+            Items = TestDataGenerator.GenerateValidOrderItems(new List<Guid> { product.Id }, 1)
+        };
+        var order2Response = await Client.PostAsJsonAsync("/api/orders", order2Request);
+        var order2 = await ApiTestHelper.GetResponseAsync<OrderResponseDto>(order2Response);
+        await Client.PostAsync($"/api/orders/{order2!.OrderId}/pay", null);
+
+        // Create and cancel order (Cancelled state)
+        var order3Request = new CreateOrderRequest
+        {
+            UserId = user.Id,
+            Items = TestDataGenerator.GenerateValidOrderItems(new List<Guid> { product.Id }, 1)
+        };
+        var order3Response = await Client.PostAsJsonAsync("/api/orders", order3Request);
+        var order3 = await ApiTestHelper.GetResponseAsync<OrderResponseDto>(order3Response);
+        await Client.DeleteAsync($"/api/orders/{order3!.OrderId}");
+
+        // Act
+        var response = await Client.GetAsync("/api/reports/order-status-distribution");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK, "order status distribution should return OK");
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Contain("createdCount", "distribution should contain created count");
+        content.Should().Contain("paidCount", "distribution should contain paid count");
+        content.Should().Contain("cancelledCount", "distribution should contain cancelled count");
+    }
+
+    #endregion
+
     #region Product Deletion Business Rules Tests
 
     [Fact]

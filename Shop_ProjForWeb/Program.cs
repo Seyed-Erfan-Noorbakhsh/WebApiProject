@@ -20,15 +20,12 @@ builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderItemRepository, OrderItemRepository>();
-builder.Services.AddScoped<IAuditRepository, AuditRepository>();
 builder.Services.AddScoped<IVipStatusHistoryRepository, VipStatusHistoryRepository>();
-builder.Services.AddScoped<IInventoryTransactionRepository, InventoryTransactionRepository>();
 
 // Register Unit of Work
 builder.Services.AddScoped<Shop_ProjForWeb.Core.Application.Interfaces.IUnitOfWork, Shop_ProjForWeb.Infrastructure.UnitOfWork>();
 
 // Register Services
-builder.Services.AddScoped<ITransactionManager, TransactionManager>();
 builder.Services.AddScoped<IValidationService, ValidationService>();
 builder.Services.AddScoped<PricingService>();
 builder.Services.AddScoped<InventoryService>();
@@ -39,7 +36,6 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IOrderCancellationService, OrderCancellationService>();
 builder.Services.AddScoped<ReportingService>();
-builder.Services.AddScoped<AuditService>();
 builder.Services.AddScoped<Shop_ProjForWeb.Core.Domain.Interfaces.IOrderStateMachine, OrderStateMachine>();
 builder.Services.AddScoped<Shop_ProjForWeb.Core.Domain.Interfaces.IVipStatusCalculator, VipStatusCalculator>();
 builder.Services.AddScoped<Shop_ProjForWeb.Core.Domain.Interfaces.IDiscountCalculator, AdditiveDiscountCalculator>();
@@ -72,6 +68,14 @@ builder.Services.AddSwaggerGen(c =>
             Name = "Shop Project Team"
         }
     });
+    
+    // Enable XML comments for better Swagger documentation
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        c.IncludeXmlComments(xmlPath);
+    }
 });
 
 var app = builder.Build();

@@ -12,7 +12,7 @@ public class Product : BaseEntity
     
     // Navigation Properties
     public Inventory? Inventory { get; set; }
-    public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+    public ICollection<OrderItem> OrderItems { get; set; } = [];
 
     public override void ValidateEntity()
     {
@@ -44,51 +44,5 @@ public class Product : BaseEntity
     private static bool IsValidUrl(string url)
     {
         return Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out _);
-    }
-
-    public void ValidatePrice()
-    {
-        if (BasePrice <= 0)
-            throw new ArgumentException("Product price must be greater than zero");
-    }
-
-    public void ValidateDiscountPercent()
-    {
-        if (DiscountPercent < 0 || DiscountPercent > 100)
-            throw new ArgumentException("Discount percent must be between 0 and 100");
-    }
-
-    public void UpdatePrice(decimal newPrice)
-    {
-        if (newPrice <= 0)
-            throw new ArgumentException("Product price must be greater than zero");
-        
-        BasePrice = newPrice;
-        UpdatedAt = DateTime.UtcNow;
-        ValidateEntity();
-    }
-
-    public void UpdateDiscount(int newDiscountPercent)
-    {
-        if (newDiscountPercent < 0 || newDiscountPercent > 100)
-            throw new ArgumentException("Discount percent must be between 0 and 100");
-        
-        DiscountPercent = newDiscountPercent;
-        UpdatedAt = DateTime.UtcNow;
-        ValidateEntity();
-    }
-
-    public void Activate()
-    {
-        IsActive = true;
-        UpdatedAt = DateTime.UtcNow;
-        ValidateEntity();
-    }
-
-    public void Deactivate()
-    {
-        IsActive = false;
-        UpdatedAt = DateTime.UtcNow;
-        ValidateEntity();
     }
 }

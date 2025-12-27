@@ -59,48 +59,4 @@ public class InventoryRepository(SupermarketDbContext context) : IInventoryRepos
         
         return inventory != null && inventory.Quantity >= quantity;
     }
-
-    /// <summary>
-    /// Reserves stock with pessimistic locking to prevent race conditions.
-    /// This method locks the inventory row to ensure no concurrent orders can oversell.
-    /// </summary>
-    public async Task<Inventory?> ReserveStockAsync(Guid productId, int quantity)
-    {
-        // Use FromSqlInterpolated with NOLOCK equivalent for SQLite (SQLite doesn't support FOR UPDATE)
-        // For SQLite, we rely on transactions and the fact that SaveChangesAsync is atomic
-        var inventory = await _context.Inventories
-            .FirstOrDefaultAsync(i => i.ProductId == productId);
-
-        if (inventory == null || inventory.Quantity < quantity)
-        {
-            return null;
-        }
-
-        // Lock is implicit in the transaction - the row is locked until transaction commits
-        return inventory;
-    }
-
-    /// <summary>
-    /// Decreases stock with pessimistic locking within a transaction.
-    /// Must be called within a transaction context.
-    /// </summary>
-    public async Task<bool> DecreaseStockWithLockAsync(Guid productId, int quantity)
-    {
-        var inventory = await _context.Inventories
-            .FirstOrDefaultAsync(i => i.ProductId == productId);
-
-        if (inventory == null || inventory.Quantity < quantity)
-        {
-            return false;
-        }
-
-        inventory.Quantity -= quantity;
-        inventory.LowStockFlag = inventory.Quantity < 10;
-        inventory.LastUpdatedAt = DateTime.UtcNow;
-
-        _context.Inventories.Update(inventory);
-        // Don't save here - let the caller manage the transaction
-
-        return true;
-    }
 }

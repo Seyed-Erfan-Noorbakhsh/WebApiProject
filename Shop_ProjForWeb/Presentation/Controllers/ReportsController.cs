@@ -3,13 +3,26 @@ using Shop_ProjForWeb.Core.Application.Services;
 
 namespace Shop_ProjForWeb.Presentation.Controllers;
 
+/// <summary>
+/// Provides business intelligence and analytics reports
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class ReportsController(ReportingService reportingService) : ControllerBase
 {
     private readonly ReportingService _reportingService = reportingService;
 
+    /// <summary>
+    /// Retrieves sales summary report with optional date filtering
+    /// </summary>
+    /// <param name="startDate">Optional start date for filtering (format: yyyy-MM-dd)</param>
+    /// <param name="endDate">Optional end date for filtering (format: yyyy-MM-dd)</param>
+    /// <returns>Sales summary including total revenue and order count</returns>
+    /// <response code="200">Returns the sales summary report</response>
+    /// <response code="500">Internal server error</response>
     [HttpGet("sales")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetSalesSummary([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
     {
         try
@@ -23,7 +36,15 @@ public class ReportsController(ReportingService reportingService) : ControllerBa
         }
     }
 
+    /// <summary>
+    /// Retrieves comprehensive inventory report for all products
+    /// </summary>
+    /// <returns>Inventory report with stock levels and low stock alerts</returns>
+    /// <response code="200">Returns the inventory report</response>
+    /// <response code="500">Internal server error</response>
     [HttpGet("inventory")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetInventoryReport()
     {
         try
@@ -37,7 +58,18 @@ public class ReportsController(ReportingService reportingService) : ControllerBa
         }
     }
 
+    /// <summary>
+    /// Retrieves spending report for a specific user
+    /// </summary>
+    /// <param name="userId">The unique identifier of the user</param>
+    /// <returns>User spending report including total spent and order history</returns>
+    /// <response code="200">Returns the user spending report</response>
+    /// <response code="400">Invalid user ID</response>
+    /// <response code="500">Internal server error</response>
     [HttpGet("user/{userId}/spending")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetUserSpendingReport(Guid userId)
     {
         try
@@ -56,7 +88,18 @@ public class ReportsController(ReportingService reportingService) : ControllerBa
         }
     }
 
+    /// <summary>
+    /// Retrieves top-selling products ranked by quantity sold
+    /// </summary>
+    /// <param name="limit">Number of top products to return (default: 10)</param>
+    /// <returns>List of top products with sales statistics</returns>
+    /// <response code="200">Returns the list of top products</response>
+    /// <response code="400">Invalid limit (must be greater than 0)</response>
+    /// <response code="500">Internal server error</response>
     [HttpGet("top-products")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetTopProducts([FromQuery] int limit = 10)
     {
         try
@@ -75,7 +118,15 @@ public class ReportsController(ReportingService reportingService) : ControllerBa
         }
     }
 
+    /// <summary>
+    /// Retrieves spending report for all users
+    /// </summary>
+    /// <returns>List of all users with their spending statistics</returns>
+    /// <response code="200">Returns the spending report for all users</response>
+    /// <response code="500">Internal server error</response>
     [HttpGet("users/spending")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetAllUsersSpendingReport()
     {
         try
@@ -89,7 +140,15 @@ public class ReportsController(ReportingService reportingService) : ControllerBa
         }
     }
 
+    /// <summary>
+    /// Retrieves order status distribution statistics
+    /// </summary>
+    /// <returns>Distribution of orders by status (Pending, Paid, Cancelled)</returns>
+    /// <response code="200">Returns the order status distribution</response>
+    /// <response code="500">Internal server error</response>
     [HttpGet("order-status-distribution")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetOrderStatusDistribution()
     {
         try

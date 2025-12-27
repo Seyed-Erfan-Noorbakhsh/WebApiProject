@@ -19,19 +19,18 @@ public class VipStatusHistory : BaseEntity
         if (UserId == Guid.Empty)
             throw new ArgumentException("UserId cannot be empty");
         
-        ValidateIntProperty(PreviousTier, nameof(PreviousTier), minValue: 0, maxValue: 10);
-        ValidateIntProperty(NewTier, nameof(NewTier), minValue: 0, maxValue: 10);
+        // Validate tier values are within valid range (0-3)
+        ValidateIntProperty(PreviousTier, nameof(PreviousTier), minValue: 0, maxValue: 3);
+        ValidateIntProperty(NewTier, nameof(NewTier), minValue: 0, maxValue: 3);
         ValidateDecimalProperty(TriggeringOrderTotal, nameof(TriggeringOrderTotal), minValue: 0);
         ValidateDecimalProperty(TotalSpendingAtUpgrade, nameof(TotalSpendingAtUpgrade), minValue: 0);
         ValidateStringProperty(Reason, nameof(Reason), minLength: 1, maxLength: 500);
         
+        // Tier must change for a valid history entry
         if (PreviousTier == NewTier)
             throw new InvalidOperationException("VIP tier must change for a valid status history entry");
         
-        if (NewTier < PreviousTier)
-            throw new InvalidOperationException("VIP tier downgrades are not currently supported");
-        
-        if (PreviousTier == 0 && NewTier > 1)
-            throw new InvalidOperationException("Users can only upgrade from regular (0) to VIP tier 1");
+        // Multi-tier jumps are now supported (e.g., 0 → 3 when spending jumps to 30000+)
+        // Tier downgrades are now supported (e.g., 2 → 1 when spending decreases)
     }
 }
