@@ -10,4 +10,9 @@ public class Product : BaseEntity
     public bool IsActive { get; set; }
     public string? ImageUrl { get; set; }
 
+    // Navigation Properties
+    public Inventory? Inventory { get; set; }
+    public ICollection<OrderItem> OrderItems { get; set; } = [];
+
+
 }
