@@ -39,23 +39,29 @@ public class Order : BaseEntity
             ValidateOrderItems();
         }
     }
-    
+
 
     public void ChangeStatus(OrderStatus newStatus, IOrderStateMachine stateMachine)
     {
         if (stateMachine == null)
             throw new ArgumentNullException(nameof(stateMachine));
-        
+
         stateMachine.ValidateBusinessRules(Status, newStatus, TotalPrice);
         Status = newStatus;
         UpdatedAt = DateTime.UtcNow;
-        
+
         if (newStatus == OrderStatus.Paid)
         {
             PaidAt = DateTime.UtcNow;
             PaymentStatus = PaymentStatus.Success;
         }
-        
+
         ValidateEntity();
+    }
+    
+
+    public bool CanBeCancelled()
+    {
+        return Status == OrderStatus.Created || Status == OrderStatus.Pending || Status == OrderStatus.Paid;
     }
 }
