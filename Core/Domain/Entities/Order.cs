@@ -58,10 +58,38 @@ public class Order : BaseEntity
 
         ValidateEntity();
     }
-    
+
 
     public bool CanBeCancelled()
     {
         return Status == OrderStatus.Created || Status == OrderStatus.Pending || Status == OrderStatus.Paid;
+    }
+    
+    public void ValidateOrderItems()
+    {
+        if (!OrderItems.Any())
+            throw new InvalidOperationException("Order must have at least one item");
+        
+        foreach (var item in OrderItems)
+        {
+            if (item.Quantity <= 0)
+                throw new ArgumentException($"Order item quantity must be greater than zero");
+            
+            if (item.UnitPrice < 0)
+                throw new ArgumentException($"Order item unit price cannot be negative");
+            
+            if (item.ProductDiscountPercent < 0 || item.ProductDiscountPercent > 100)
+                throw new ArgumentException($"Product discount percent must be between 0 and 100");
+            
+            if (item.VipDiscountPercent < 0 || item.VipDiscountPercent > 100)
+                throw new ArgumentException($"VIP discount percent must be between 0 and 100");
+        }
+        
+        // Validate total price matches sum of order items
+        var calculatedTotal = OrderItems.Sum(oi => oi.UnitPrice * oi.Quantity);
+        if (Math.Abs(TotalPrice - calculatedTotal) > 0.01m) // Allow for small rounding differences
+        {
+            throw new InvalidOperationException($"Order total price ({TotalPrice}) does not match sum of order items ({calculatedTotal})");
+        }
     }
 }
