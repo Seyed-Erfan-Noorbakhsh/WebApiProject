@@ -18,22 +18,22 @@ public class Product : BaseEntity
     public override void ValidateEntity()
     {
         base.ValidateEntity();
-        
+
         ValidateStringProperty(Name, nameof(Name), minLength: 1, maxLength: 200);
-        
+
         if (!string.IsNullOrEmpty(Description))
         {
             ValidateStringProperty(Description, nameof(Description), maxLength: 1000);
         }
-        
+
         if (!string.IsNullOrEmpty(Category))
         {
             ValidateStringProperty(Category, nameof(Category), maxLength: 100);
         }
-        
+
         ValidateDecimalProperty(BasePrice, nameof(BasePrice), minValue: 0);
         ValidateIntProperty(DiscountPercent, nameof(DiscountPercent), minValue: 0, maxValue: 100);
-        
+
         if (!string.IsNullOrEmpty(ImageUrl))
         {
             ValidateStringProperty(ImageUrl, nameof(ImageUrl), maxLength: 500);
@@ -42,5 +42,9 @@ public class Product : BaseEntity
         }
     }
 
-
+    private static bool IsValidUrl(string url)
+    {
+        return Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out _);
+    }
 }
+
