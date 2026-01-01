@@ -13,4 +13,23 @@ public class Inventory : BaseEntity
     public Product? Product { get; set; }
 
     public int AvailableQuantity => Quantity - ReservedQuantity;
+
+
+    public override void ValidateEntity()
+    {
+        base.ValidateEntity();
+        
+        if (ProductId == Guid.Empty)
+            throw new ArgumentException("ProductId cannot be empty");
+        
+        ValidateIntProperty(Quantity, nameof(Quantity), minValue: 0);
+        ValidateIntProperty(ReservedQuantity, nameof(ReservedQuantity), minValue: 0);
+        ValidateIntProperty(LowStockThreshold, nameof(LowStockThreshold), minValue: 0);
+        
+        if (ReservedQuantity > Quantity)
+            throw new InvalidOperationException("Reserved quantity cannot exceed total quantity");
+        
+        if (LastUpdatedAt == default)
+            throw new ArgumentException("LastUpdatedAt must be set");
+    }
 }
