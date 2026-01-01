@@ -64,7 +64,7 @@ public class Inventory : BaseEntity
     {
         if (quantity <= 0)
             return false;
-        
+
         return AvailableQuantity >= quantity;
     }
 
@@ -74,8 +74,37 @@ public class Inventory : BaseEntity
             throw new ArgumentException("Quantity must be positive");
         if (!CanReserve(quantity))
             throw new InvalidOperationException($"Cannot reserve {quantity} items. Available: {AvailableQuantity}");
-        
+
         ReservedQuantity += quantity;
+        LastUpdatedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+        UpdateLowStockFlag();
+        ValidateEntity();
+    }
+    
+     public void ReleaseReservation(int quantity)
+    {
+        if (quantity <= 0)
+            throw new ArgumentException("Quantity must be positive");
+        if (ReservedQuantity < quantity)
+            throw new InvalidOperationException($"Cannot release {quantity} items. Reserved: {ReservedQuantity}");
+        
+        ReservedQuantity -= quantity;
+        LastUpdatedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+        UpdateLowStockFlag();
+        ValidateEntity();
+    }
+
+    public void CommitReservation(int quantity)
+    {
+        if (quantity <= 0)
+            throw new ArgumentException("Quantity must be positive");
+        if (ReservedQuantity < quantity)
+            throw new InvalidOperationException($"Cannot commit {quantity} items. Reserved: {ReservedQuantity}");
+        
+        ReservedQuantity -= quantity;
+        Quantity -= quantity;
         LastUpdatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
         UpdateLowStockFlag();
