@@ -1,243 +1,90 @@
-using AutoMapper;
-using Shop_ProjForWeb.Application.DTOs.User;
-using Shop_ProjForWeb.Application.Interfaces;
-using Shop_ProjForWeb.Domain.Entities;
-using Shop_ProjForWeb.Domain.Interfaces;
-using BCrypt.Net;
+﻿namespace Shop_ProjForWeb.Core.Application.Services;
 
-namespace Shop_ProjForWeb.Application.Services;
+using Shop_ProjForWeb.Core.Application.DTOs;
+using Shop_ProjForWeb.Core.Application.Interfaces;
+using Shop_ProjForWeb.Core.Domain.Entities;
+using Shop_ProjForWeb.Core.Domain.Exceptions;
 
-public class UserService : IUserService
+public class UserService(
+    IUserRepository userRepository,
+    IOrderRepository orderRepository) : IUserService
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IMapper _mapper;
-    private readonly ILoggerService _logger;
-
-    public UserService(IUnitOfWork unitOfWork, IMapper mapper, ILoggerService logger)
-    {
-        _unitOfWork = unitOfWork;
-        _mapper = mapper;
-        _logger = logger;
-    }
-
-    public async Task<UserDto?> GetUserByIdAsync(int id)
-    {
-        var user = await _unitOfWork.Users.GetByIdAsync(id);
-        return user == null ? null : await MapToDtoAsync(user);
-    }
-
-    public async Task<UserDto?> GetUserByUsernameAsync(string username)
-    {
-        var users = await _unitOfWork.Users.FindAsync(u => u.Username == username && !u.IsDeleted);
-        var user = users.FirstOrDefault();
-        return user == null ? null : await MapToDtoAsync(user);
-    }
-
-    public async Task<UserDto?> GetUserByEmailAsync(string email)
-    {
-        var users = await _unitOfWork.Users.FindAsync(u => u.Email == email && !u.IsDeleted);
-        var user = users.FirstOrDefault();
-        return user == null ? null : await MapToDtoAsync(user);
-    }
-
-    public async Task<IEnumerable<UserDto>> GetAllUsersAsync()
-    {
-        var users = await _unitOfWork.Users.FindAsync(u => !u.IsDeleted);
-        var userDtos = new List<UserDto>();
-        
-        foreach (var user in users)
-        {
-            userDtos.Add(await MapToDtoAsync(user));
-        }
-        
-        return userDtos;
-    }
+    private readonly IUserRepository _userRepository = userRepository;
+    private readonly IOrderRepository _orderRepository = orderRepository;
 
     public async Task<UserDto> CreateUserAsync(CreateUserDto dto)
     {
-        _logger.LogInformation("Creating user: {Username}", dto.Username);
-
-        var existingUser = (await _unitOfWork.Users.FindAsync(u => 
-            u.Username == dto.Username || u.Email == dto.Email)).FirstOrDefault();
-
-        if (existingUser != null)
-        {
-            throw new InvalidOperationException("Username or email already exists");
-        }
-
+        // Note: IsVip is now a computed property (VipTier > 0), not set directly
         var user = new User
         {
-            Username = dto.Username,
-            Email = dto.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-            FirstName = dto.FirstName,
-            LastName = dto.LastName,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
+            FullName = dto.FullName,
+            VipTier = 0 // New users start as non-VIP
         };
 
-        await _unitOfWork.Users.AddAsync(user);
-        await _unitOfWork.SaveChangesAsync();
+        await _userRepository.AddAsync(user);
 
-        // Assign roles
-        foreach (var roleId in dto.RoleIds)
-        {
-            var role = await _unitOfWork.Roles.GetByIdAsync(roleId);
-            if (role != null)
-            {
-                var userRole = new UserRole
-                {
-                    UserId = user.Id,
-                    RoleId = roleId,
-                    CreatedAt = DateTime.UtcNow
-                };
-                await _unitOfWork.UserRoles.AddAsync(userRole);
-            }
-        }
-
-        await _unitOfWork.SaveChangesAsync();
-        _logger.LogInformation("User {Username} created successfully", user.Username);
-
-        return await MapToDtoAsync(user);
+        return MapToDto(user);
     }
 
-    public async Task<UserDto> UpdateUserAsync(int id, UpdateUserDto dto)
+    public async Task UpdateUserAsync(Guid id, UpdateUserDto dto)
     {
-        var user = await _unitOfWork.Users.GetByIdAsync(id);
+        var user = await _userRepository.GetByIdAsync(id);
         if (user == null)
         {
-            throw new KeyNotFoundException("User not found");
+            throw new UserNotFoundException($"User not found with id {id}");
         }
 
-        if (!string.IsNullOrEmpty(dto.Email))
-            user.Email = dto.Email;
-        if (!string.IsNullOrEmpty(dto.FirstName))
-            user.FirstName = dto.FirstName;
-        if (!string.IsNullOrEmpty(dto.LastName))
-            user.LastName = dto.LastName;
-        if (dto.IsActive.HasValue)
-            user.IsActive = dto.IsActive.Value;
+        if (!string.IsNullOrEmpty(dto.FullName))
+            user.FullName = dto.FullName;
 
-        user.UpdatedAt = DateTime.UtcNow;
-        await _unitOfWork.Users.UpdateAsync(user);
-        await _unitOfWork.SaveChangesAsync();
-
-        _logger.LogInformation("User {UserId} updated successfully", id);
-        return await MapToDtoAsync(user);
+        await _userRepository.UpdateAsync(user);
     }
 
-    public async Task<bool> DeleteUserAsync(int id)
+    public async Task DeleteUserAsync(Guid id)
     {
-        var user = await _unitOfWork.Users.GetByIdAsync(id);
+        var user = await _userRepository.GetByIdAsync(id);
         if (user == null)
         {
-            return false;
+            throw new UserNotFoundException($"User not found with id {id}");
         }
 
-        user.IsDeleted = true;
-        user.UpdatedAt = DateTime.UtcNow;
-        await _unitOfWork.Users.UpdateAsync(user);
-        await _unitOfWork.SaveChangesAsync();
-
-        _logger.LogInformation("User {UserId} deleted", id);
-        return true;
-    }
-
-    public async Task<bool> AssignRoleToUserAsync(int userId, int roleId)
-    {
-        var existing = (await _unitOfWork.UserRoles.FindAsync(ur => 
-            ur.UserId == userId && ur.RoleId == roleId)).FirstOrDefault();
-
-        if (existing != null)
+        // Check for referential integrity - users with orders cannot be deleted
+        var userOrders = await _orderRepository.GetUserOrdersAsync(id);
+        if (userOrders.Count > 0)
         {
-            return false;
+            throw new InvalidOperationException($"Cannot delete user with existing orders. User has {userOrders.Count} orders. Consider soft delete instead.");
         }
 
-        var userRole = new UserRole
-        {
-            UserId = userId,
-            RoleId = roleId,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        await _unitOfWork.UserRoles.AddAsync(userRole);
-        await _unitOfWork.SaveChangesAsync();
-
-        _logger.LogInformation("Role {RoleId} assigned to user {UserId}", roleId, userId);
-        return true;
+        // Perform soft delete instead of hard delete for audit trail
+        user.SoftDelete();
+        await _userRepository.UpdateAsync(user);
     }
 
-    public async Task<bool> RemoveRoleFromUserAsync(int userId, int roleId)
+    public async Task<UserDto> GetUserAsync(Guid id)
     {
-        var userRole = (await _unitOfWork.UserRoles.FindAsync(ur => 
-            ur.UserId == userId && ur.RoleId == roleId)).FirstOrDefault();
-
-        if (userRole == null)
-        {
-            return false;
-        }
-
-        await _unitOfWork.UserRoles.DeleteAsync(userRole);
-        await _unitOfWork.SaveChangesAsync();
-
-        _logger.LogInformation("Role {RoleId} removed from user {UserId}", roleId, userId);
-        return true;
-    }
-
-    public async Task<bool> ActivateUserAsync(int userId)
-    {
-        var user = await _unitOfWork.Users.GetByIdAsync(userId);
+        var user = await _userRepository.GetByIdAsync(id);
         if (user == null)
         {
-            return false;
+            throw new UserNotFoundException($"User not found with id {id}");
         }
 
-        user.IsActive = true;
-        user.UpdatedAt = DateTime.UtcNow;
-        await _unitOfWork.Users.UpdateAsync(user);
-        await _unitOfWork.SaveChangesAsync();
-
-        return true;
+        return MapToDto(user);
     }
 
-    public async Task<bool> DeactivateUserAsync(int userId)
+    public async Task<List<UserDto>> GetAllUsersAsync()
     {
-        var user = await _unitOfWork.Users.GetByIdAsync(userId);
-        if (user == null)
-        {
-            return false;
-        }
-
-        user.IsActive = false;
-        user.UpdatedAt = DateTime.UtcNow;
-        await _unitOfWork.Users.UpdateAsync(user);
-        await _unitOfWork.SaveChangesAsync();
-
-        return true;
+        var users = await _userRepository.GetAllAsync();
+        return users.Select(MapToDto).ToList();
     }
 
-    private async Task<UserDto> MapToDtoAsync(User user)
+    private static UserDto MapToDto(User user)
     {
-        var roles = user.UserRoles.Select(ur => ur.Role.Name).ToList();
-        var permissions = user.UserRoles
-            .SelectMany(ur => ur.Role.RolePermissions)
-            .Select(rp => $"{rp.Permission.Resource}.{rp.Permission.Action}")
-            .Distinct()
-            .ToList();
-
         return new UserDto
         {
             Id = user.Id,
-            Username = user.Username,
-            Email = user.Email,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            IsActive = user.IsActive,
-            EmailConfirmed = user.EmailConfirmed,
-            LastLoginAt = user.LastLoginAt,
-            Roles = roles,
-            Permissions = permissions
+            FullName = user.FullName,
+            IsVip = user.IsVip,
+            CreatedAt = user.CreatedAt
         };
     }
 }
-
