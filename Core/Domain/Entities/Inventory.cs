@@ -46,12 +46,12 @@ public class Inventory : BaseEntity
         UpdateLowStockFlag();
         ValidateEntity();
     }
-    
+
     public void IncreaseStock(int quantity)
     {
         if (quantity <= 0)
             throw new ArgumentException("Quantity must be positive");
-        
+
         Quantity += quantity;
         LastUpdatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
@@ -59,4 +59,26 @@ public class Inventory : BaseEntity
         ValidateEntity();
     }
 
+
+    public bool CanReserve(int quantity)
+    {
+        if (quantity <= 0)
+            return false;
+        
+        return AvailableQuantity >= quantity;
+    }
+
+    public void ReserveStock(int quantity)
+    {
+        if (quantity <= 0)
+            throw new ArgumentException("Quantity must be positive");
+        if (!CanReserve(quantity))
+            throw new InvalidOperationException($"Cannot reserve {quantity} items. Available: {AvailableQuantity}");
+        
+        ReservedQuantity += quantity;
+        LastUpdatedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+        UpdateLowStockFlag();
+        ValidateEntity();
+    }
 }
