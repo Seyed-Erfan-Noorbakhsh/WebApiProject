@@ -1,4 +1,4 @@
-namespace Shop_ProjForWeb.Core.Application.Services;
+﻿namespace Shop_ProjForWeb.Core.Application.Services;
 
 using System.Text.Json;
 
@@ -35,4 +35,4 @@ public class AgifyService
             return null;
         }
     }
-}
+}//
