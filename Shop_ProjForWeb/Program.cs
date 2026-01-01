@@ -1,46 +1,98 @@
 ﻿using System.Text;
+using System.Reflection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Shop_ProjForWeb.Application.Interfaces;
-using Shop_ProjForWeb.Application.Mappings;
-using Shop_ProjForWeb.Application.Services;
-using Shop_ProjForWeb.Infrastructure.Data;
-using Shop_ProjForWeb.Infrastructure.Extensions;
-using Shop_ProjForWeb.Infrastructure.Logging;
-using Shop_ProjForWeb.Infrastructure.Middleware;
+using MediatR;
 using Serilog;
 using AspNetCoreRateLimit;
 using FluentValidation;
 using FluentValidation.AspNetCore;
-using Shop_ProjForWeb.Application.Validators;
+using AutoMapper;
+using Shop_ProjForWeb.Core.Application.Configuration;
+using Shop_ProjForWeb.Core.Application.Interfaces;
+using Shop_ProjForWeb.Core.Application.Services;
+using Shop_ProjForWeb.Infrastructure.Data;
+using Shop_ProjForWeb.Infrastructure.Repositories;
+using Shop_ProjForWeb.Presentation.Middleware;
+using Shop_ProjForWeb.Infrastructure.Logging;
+using Shop_ProjForWeb.Infrastructure.Middleware;
+using Shop_ProjForWeb.Domain.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Serilog
+#region Logging (Serilog)
 SerilogConfiguration.ConfigureSerilog(builder.Configuration);
 builder.Host.UseSerilog();
+#endregion
 
-// Add services to the container
+#region Database (SQLite – Supermarket)
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlite("Data Source=supermarket.db"));
+#endregion
+
+#region MediatR
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
+});
+#endregion
+
+#region Repositories & Unit of Work
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+#endregion
+
+#region Application Services
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IPermissionService, PermissionService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<ILoggerService, SerilogLoggerService>();
+builder.Services.AddScoped<PricingService>();
+builder.Services.AddScoped<InventoryService>();
+builder.Services.AddScoped<VipUpgradeService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<ProductImageService>();
+builder.Services.AddScoped<AgifyService>();
+
+// AutoMapper
+builder.Services.AddAutoMapper(typeof(Shop_ProjForWeb.Application.Mappings.MappingProfile));
+#endregion
+
+#region Configuration
+builder.Services.Configure<FileUploadOptions>(
+    builder.Configuration.GetSection("FileUpload"));
+#endregion
+
+#region Controllers + Validation
 builder.Services.AddControllers()
     .AddFluentValidation();
-builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddFluentValidationClientsideAdapters();
+#endregion
 
-// Swagger configuration
+#region Swagger + JWT
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Shop Web API",
         Version = "v1",
-        Description = "Web API with Authentication, Authorization, and Logging"
+        Description = "Shop API with Orders, Auth, Logging and Security"
     });
 
-    // Add JWT authentication to Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token",
+        Description = "JWT Authorization header using the Bearer scheme",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
@@ -62,15 +114,10 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
+#endregion
 
-// Database
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
-        b => b.MigrationsAssembly("Shop_ProjForWeb.Infrastructure")));
-
-// JWT Authentication
-var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured");
+#region Authentication & Authorization
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "SUPER_SECRET_KEY";
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "ShopAPI";
 var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "ShopAPI";
 
@@ -94,25 +141,17 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+#endregion
 
-// Infrastructure
-builder.Services.AddInfrastructure(builder.Configuration);
+#region Rate Limiting
+builder.Services.AddMemoryCache();
+builder.Services.Configure<IpRateLimitOptions>(
+    builder.Configuration.GetSection("IpRateLimiting"));
+builder.Services.AddInMemoryRateLimiting();
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+#endregion
 
-// Application Services
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IRoleService, RoleService>();
-builder.Services.AddScoped<IPermissionService, PermissionService>();
-
-// AutoMapper
-builder.Services.AddAutoMapper(typeof(MappingProfile));
-
-// FluentValidation
-builder.Services.AddValidatorsFromAssemblyContaining<RegisterRequestDtoValidator>();
-builder.Services.AddFluentValidationAutoValidation();
-builder.Services.AddFluentValidationClientsideAdapters();
-
-// CORS
+#region CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -122,19 +161,11 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader();
     });
 });
-
-// Rate Limiting
-builder.Services.AddMemoryCache();
-builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
-builder.Services.AddInMemoryRateLimiting();
-builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
-
-// Request Logging (transient, not scoped)
-builder.Services.AddTransient<RequestLoggingMiddleware>();
+#endregion
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
+#region Pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -142,39 +173,18 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-// Security Headers (should be early in pipeline)
-app.UseSecurityHeaders();
-
-// Rate Limiting
-app.UseIpRateLimiting();
-
-// CORS
 app.UseCors("AllowAll");
 
-// Request Logging (before exception handling to log all requests)
-app.UseRequestLogging();
+app.UseMiddleware<GlobalExceptionMiddleware>();
+app.UseSecurityHeaders();
+app.UseIpRateLimiting();
 
-// Exception Handling (should be before other middleware that might throw)
-app.UseExceptionHandling();
-
-// Audit Logging
-app.UseAuditLogging();
-
-// Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.UseStaticFiles();
 app.MapControllers();
+#endregion
 
-// Initialize database
-using (var scope = app.Services.CreateScope())
-{
-    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await Shop_ProjForWeb.Infrastructure.Data.DbInitializer.InitializeAsync(context);
-}
-
-Log.Information("Application starting up");
-
+Log.Information("Application started successfully");
 app.Run();
-

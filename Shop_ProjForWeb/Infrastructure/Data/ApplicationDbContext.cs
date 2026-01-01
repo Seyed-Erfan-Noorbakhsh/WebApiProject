@@ -1,11 +1,13 @@
 using Microsoft.EntityFrameworkCore;
-using Shop_ProjForWeb.Domain.Entities;
+using Shop_ProjForWeb.Core.Domain.Entities;
+using Shop_ProjForWeb.Core.Domain.Enums;
 
 namespace Shop_ProjForWeb.Infrastructure.Data;
 
 public class ApplicationDbContext : DbContext
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options)
     {
     }
 
@@ -14,10 +16,17 @@ public class ApplicationDbContext : DbContext
     public DbSet<Permission> Permissions { get; set; }
     public DbSet<UserRole> UserRoles { get; set; }
     public DbSet<RolePermission> RolePermissions { get; set; }
+
     public DbSet<AuditLog> AuditLogs { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<EmailVerificationToken> EmailVerificationTokens { get; set; }
     public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
+
+    public DbSet<Product> Products { get; set; }
+    public DbSet<Inventory> Inventories { get; set; }
+    public DbSet<Order> Orders { get; set; }
+    public DbSet<OrderItem> OrderItems { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -130,6 +139,105 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+
+        // Product configuration
+        modelBuilder.Entity<Product>(entity =>
+        {
+             entity.HasKey(e => e.Id);
+
+    entity.Property(e => e.Name)
+        .IsRequired()
+        .HasMaxLength(200);
+
+    entity.Property(e => e.BasePrice)
+        .IsRequired()
+        .HasPrecision(18, 2);
+
+    entity.Property(e => e.DiscountPercent)
+        .IsRequired();
+
+    entity.Property(e => e.IsActive)
+        .IsRequired();
+
+    entity.Property(e => e.ImageUrl)
+        .HasMaxLength(500);
+
+    // One-to-One: Product -> Inventory
+    entity.HasOne<Inventory>()
+        .WithOne()
+        .HasForeignKey<Inventory>(i => i.ProductId)
+        .OnDelete(DeleteBehavior.Cascade);
+});
+
+        // Inventory configuration
+        modelBuilder.Entity<Inventory>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+    entity.HasIndex(e => e.ProductId)
+        .IsUnique();
+
+    entity.Property(e => e.Quantity)
+        .IsRequired();
+
+    entity.Property(e => e.LowStockFlag)
+        .IsRequired();
+
+    entity.Property(e => e.LastUpdatedAt)
+        .IsRequired();
+});
+
+        // Order configuration
+        modelBuilder.Entity<Order>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+    entity.Property(e => e.TotalPrice)
+        .IsRequired()
+        .HasPrecision(18, 2);
+
+    entity.Property(e => e.Status)
+        .IsRequired()
+        .HasConversion<int>();
+
+    entity.Property(e => e.CreatedAt)
+        .IsRequired();
+
+    entity.Property(e => e.PaidAt)
+        .IsRequired(false);
+
+    entity.HasIndex(e => e.UserId);
+
+    // One-to-Many: Order -> OrderItems
+    entity.HasMany(e => e.OrderItems)
+        .WithOne()
+        .HasForeignKey(oi => oi.OrderId)
+        .OnDelete(DeleteBehavior.Cascade);
+});
+
+        // OrderItem configuration
+        modelBuilder.Entity<OrderItem>(entity =>
+        {
+             entity.HasKey(e => e.Id);
+
+    entity.Property(e => e.UnitPrice)
+        .IsRequired()
+        .HasPrecision(18, 2);
+
+    entity.Property(e => e.Quantity)
+        .IsRequired();
+
+    entity.Property(e => e.DiscountApplied)
+        .IsRequired();
+
+    entity.HasIndex(e => new { e.OrderId, e.ProductId });
+
+    // Many-to-One: OrderItem -> Product
+    entity.HasOne<Product>()
+        .WithMany()
+        .HasForeignKey(e => e.ProductId)
+        .OnDelete(DeleteBehavior.Restrict);
+});
     }
 }
 

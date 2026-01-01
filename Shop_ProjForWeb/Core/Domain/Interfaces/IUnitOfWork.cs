@@ -1,8 +1,9 @@
-using Shop_ProjForWeb.Domain.Entities;
+
+using Shop_ProjForWeb.Core.Domain.Entities;
 
 namespace Shop_ProjForWeb.Domain.Interfaces;
 
-public interface IUnitOfWork : IDisposable
+public interface IUnitOfWork
 {
     IRepository<User> Users { get; }
     IRepository<Role> Roles { get; }
@@ -13,10 +14,11 @@ public interface IUnitOfWork : IDisposable
     IRepository<RefreshToken> RefreshTokens { get; }
     IRepository<EmailVerificationToken> EmailVerificationTokens { get; }
     IRepository<PasswordResetToken> PasswordResetTokens { get; }
+
+    IRepository<Product> Products { get; }
+    IRepository<Order> Orders { get; }
     
     Task<int> SaveChangesAsync();
-    Task BeginTransactionAsync();
-    Task CommitTransactionAsync();
-    Task RollbackTransactionAsync();
+   
 }
 

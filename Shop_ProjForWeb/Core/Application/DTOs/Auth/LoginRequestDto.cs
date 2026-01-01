@@ -1,5 +1,6 @@
 namespace Shop_ProjForWeb.Application.DTOs.Auth;
 
+
 public class LoginRequestDto
 {
     public string Username { get; set; } = string.Empty;

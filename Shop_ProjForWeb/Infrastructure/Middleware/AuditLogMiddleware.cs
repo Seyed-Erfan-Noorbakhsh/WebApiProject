@@ -1,5 +1,6 @@
 using System.Text;
-using Shop_ProjForWeb.Domain.Entities;
+using Shop_ProjForWeb.Core.Domain.Entities;
+
 using Shop_ProjForWeb.Domain.Interfaces;
 
 namespace Shop_ProjForWeb.Infrastructure.Middleware;

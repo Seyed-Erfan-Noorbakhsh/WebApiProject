@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore;
 using Shop_ProjForWeb.Core.Application.Interfaces;
 using Shop_ProjForWeb.Core.Domain.Entities;
 using Shop_ProjForWeb.Core.Domain.Enums;
-using Shop_ProjForWeb.Infrastructure.Persistent.DbContext;
+using Shop_ProjForWeb.Infrastructure.Data;
 
 public class OrderRepository : IOrderRepository
 {
-    private readonly SupermarketDbContext _context;
+    private readonly ApplicationDbContext _context;
 
-    public OrderRepository(SupermarketDbContext context)
+    public OrderRepository(ApplicationDbContext context)
     {
         _context = context;
     }
@@ -20,7 +20,7 @@ public class OrderRepository : IOrderRepository
         await _context.Orders.AddAsync(order);
     }
 
-    public async Task<Order?> GetByIdAsync(Guid id)
+    public async Task<Order?> GetByIdAsync(int id)
     {
         return await _context.Orders.FirstOrDefaultAsync(o => o.Id == id);
     }
@@ -31,7 +31,7 @@ public class OrderRepository : IOrderRepository
         await Task.CompletedTask;
     }
 
-    public async Task<decimal> GetTotalPaidAmountForUserAsync(Guid userId)
+    public async Task<decimal> GetTotalPaidAmountForUserAsync(int userId)
     {
         return await _context.Orders
             .Where(o => o.UserId == userId && o.Status == OrderStatus.Paid)

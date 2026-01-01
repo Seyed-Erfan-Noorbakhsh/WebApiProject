@@ -1,5 +1,5 @@
 using System.Linq.Expressions;
-using Shop_ProjForWeb.Domain.Entities;
+using Shop_ProjForWeb.Core.Domain.Entities;
 
 namespace Shop_ProjForWeb.Domain.Interfaces;
 

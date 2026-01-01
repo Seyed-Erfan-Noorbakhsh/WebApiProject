@@ -1,37 +1,45 @@
-namespace Shop_ProjForWeb.Presentation.Controllers;
-
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Shop_ProjForWeb.Core.Application.DTOs;
-using Shop_ProjForWeb.Core.Application.Interfaces;
+using Shop_ProjForWeb.Core.Application.Orders.Commands.CreateOrder;
 
-[ApiController]
-[Route("api/[controller]")]
-public class OrdersController : ControllerBase
+namespace Shop_ProjForWeb.Presentation.Controllers
 {
-    private readonly IOrderService _orderService;
-
-    public OrdersController(IOrderService orderService)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class OrdersController : ControllerBase
     {
-        _orderService = orderService;
+        private readonly IMediator _mediator;
+
+        public OrdersController(IMediator mediator)
+        {
+            _mediator = mediator;
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<OrderResponseDto>> CreateOrder([FromBody] CreateOrderRequest request)
+        {
+            var command = new CreateOrderCommand
+            {
+                UserId = request.UserId,
+                Items = request.Items
+            };
+
+            var result = await _mediator.Send(command);
+            return Ok(result);
+        }
+
+        [HttpPost("{orderId}/pay")]
+        public async Task<IActionResult> PayOrder(int orderId)
+        {
+            //await _orderService.PayOrderAsync(orderId);
+            return Ok();
+        }
     }
 
-    [HttpPost]
-    public async Task<ActionResult<OrderResponseDto>> CreateOrder([FromBody] CreateOrderRequest request)
+    public class CreateOrderRequest
     {
-        var result = await _orderService.CreateOrderAsync(request.UserId, request.Items);
-        return Ok(result);
+        public int UserId { get; set; }
+        public List<CreateOrderItemDto> Items { get; set; } = new();
     }
-
-    [HttpPost("{orderId}/pay")]
-    public async Task<IActionResult> PayOrder(Guid orderId)
-    {
-        await _orderService.PayOrderAsync(orderId);
-        return Ok();
-    }
-}
-
-public class CreateOrderRequest
-{
-    public Guid UserId { get; set; }
-    public List<CreateOrderItemDto> Items { get; set; }
 }

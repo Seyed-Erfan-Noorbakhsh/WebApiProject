@@ -1,4 +1,8 @@
 using Shop_ProjForWeb.Application.DTOs.Auth;
+using Shop_ProjForWeb.Core.Application.DTOs.Auth;
+
+
+
 
 namespace Shop_ProjForWeb.Application.Interfaces;
 
