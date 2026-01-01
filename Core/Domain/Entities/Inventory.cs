@@ -81,14 +81,14 @@ public class Inventory : BaseEntity
         UpdateLowStockFlag();
         ValidateEntity();
     }
-    
-     public void ReleaseReservation(int quantity)
+
+    public void ReleaseReservation(int quantity)
     {
         if (quantity <= 0)
             throw new ArgumentException("Quantity must be positive");
         if (ReservedQuantity < quantity)
             throw new InvalidOperationException($"Cannot release {quantity} items. Reserved: {ReservedQuantity}");
-        
+
         ReservedQuantity -= quantity;
         LastUpdatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
@@ -102,12 +102,25 @@ public class Inventory : BaseEntity
             throw new ArgumentException("Quantity must be positive");
         if (ReservedQuantity < quantity)
             throw new InvalidOperationException($"Cannot commit {quantity} items. Reserved: {ReservedQuantity}");
-        
+
         ReservedQuantity -= quantity;
         Quantity -= quantity;
         LastUpdatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
         UpdateLowStockFlag();
         ValidateEntity();
+    }
+    
+    public void UpdateLowStockFlagManually()
+    {
+        UpdateLowStockFlag();
+        UpdatedAt = DateTime.UtcNow;
+        ValidateEntity();
+    }
+
+    private void UpdateLowStockFlag()
+    {
+        // Use available quantity (total - reserved) for low stock calculation
+        LowStockFlag = AvailableQuantity <= LowStockThreshold;
     }
 }
