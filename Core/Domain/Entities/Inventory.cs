@@ -18,18 +18,45 @@ public class Inventory : BaseEntity
     public override void ValidateEntity()
     {
         base.ValidateEntity();
-        
+
         if (ProductId == Guid.Empty)
             throw new ArgumentException("ProductId cannot be empty");
-        
+
         ValidateIntProperty(Quantity, nameof(Quantity), minValue: 0);
         ValidateIntProperty(ReservedQuantity, nameof(ReservedQuantity), minValue: 0);
         ValidateIntProperty(LowStockThreshold, nameof(LowStockThreshold), minValue: 0);
-        
+
         if (ReservedQuantity > Quantity)
             throw new InvalidOperationException("Reserved quantity cannot exceed total quantity");
-        
+
         if (LastUpdatedAt == default)
             throw new ArgumentException("LastUpdatedAt must be set");
     }
+
+    public void DecreaseStock(int quantity)
+    {
+        if (quantity <= 0)
+            throw new ArgumentException("Quantity must be positive");
+        if (Quantity < quantity)
+            throw new InvalidOperationException($"Insufficient stock. Available: {Quantity}, Requested: {quantity}");
+
+        Quantity -= quantity;
+        LastUpdatedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+        UpdateLowStockFlag();
+        ValidateEntity();
+    }
+    
+    public void IncreaseStock(int quantity)
+    {
+        if (quantity <= 0)
+            throw new ArgumentException("Quantity must be positive");
+        
+        Quantity += quantity;
+        LastUpdatedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+        UpdateLowStockFlag();
+        ValidateEntity();
+    }
+
 }
