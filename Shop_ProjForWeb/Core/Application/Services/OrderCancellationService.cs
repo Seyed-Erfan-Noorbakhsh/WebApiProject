@@ -1,4 +1,4 @@
-﻿namespace Shop_ProjForWeb.Core.Application.Services;
+namespace Shop_ProjForWeb.Core.Application.Services;
 
 using Shop_ProjForWeb.Core.Application.Interfaces;
 using Shop_ProjForWeb.Core.Domain.Enums;
@@ -62,7 +62,7 @@ public class OrderCancellationService(
                 order.PaidAt = null;
                 order.PaymentStatus = PaymentStatus.Pending;
             }
-
+            
             // Use state machine to change status
             order.ChangeStatus(OrderStatus.Cancelled, _orderStateMachine);
             await _unitOfWork.Orders.UpdateAsync(order);

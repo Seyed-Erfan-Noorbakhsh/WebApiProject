@@ -1,4 +1,4 @@
-﻿using Shop_ProjForWeb.Core.Application.DTOs;
+using Shop_ProjForWeb.Core.Application.DTOs;
 using Shop_ProjForWeb.Core.Application.Interfaces;
 using Shop_ProjForWeb.Core.Domain.Enums;
 
@@ -19,13 +19,13 @@ public class ReportingService(
     public async Task<SalesSummaryDto> GetSalesSummaryAsync(DateTime? startDate = null, DateTime? endDate = null)
     {
         var paidOrders = await _orderRepository.GetOrdersByStatusAsync(OrderStatus.Paid);
-
+        
         // Filter by date range if provided
         if (startDate.HasValue)
         {
             paidOrders = paidOrders.Where(o => o.CreatedAt >= startDate.Value).ToList();
         }
-
+        
         if (endDate.HasValue)
         {
             paidOrders = paidOrders.Where(o => o.CreatedAt <= endDate.Value).ToList();

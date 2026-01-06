@@ -1,180 +1,128 @@
-﻿using System.Text;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Shop_ProjForWeb.Core.Application.Configuration;
+using Shop_ProjForWeb.Core.Application.Interfaces;
+using Shop_ProjForWeb.Core.Application.Services;
+using Shop_ProjForWeb.Infrastructure.Persistent.DbContext;
+using Shop_ProjForWeb.Infrastructure.Persistent.Configurations;
+using Shop_ProjForWeb.Infrastructure.Repositories;
+using Shop_ProjForWeb.Presentation.Middleware;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
-using Shop_ProjForWeb.Application.Interfaces;
-using Shop_ProjForWeb.Application.Mappings;
-using Shop_ProjForWeb.Application.Services;
-using Shop_ProjForWeb.Infrastructure.Data;
-using Shop_ProjForWeb.Infrastructure.Extensions;
-using Shop_ProjForWeb.Infrastructure.Logging;
-using Shop_ProjForWeb.Infrastructure.Middleware;
-using Serilog;
-using AspNetCoreRateLimit;
 using FluentValidation;
-using FluentValidation.AspNetCore;
-using Shop_ProjForWeb.Application.Validators;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Serilog
-SerilogConfiguration.ConfigureSerilog(builder.Configuration);
-builder.Host.UseSerilog();
+// Add services to the container.
+builder.Services.AddDbContext<SupermarketDbContext>(options =>
+    options.UseInMemoryDatabase("SupermarketDb"));
 
-// Add services to the container
-builder.Services.AddControllers()
-    .AddFluentValidation();
+// Register Repositories
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IOrderItemRepository, OrderItemRepository>();
+builder.Services.AddScoped<IVipStatusHistoryRepository, VipStatusHistoryRepository>();
+
+// Register Unit of Work
+builder.Services.AddScoped<Shop_ProjForWeb.Core.Application.Interfaces.IUnitOfWork, Shop_ProjForWeb.Infrastructure.UnitOfWork>();
+
+// Register Services
+builder.Services.AddScoped<IValidationService, ValidationService>();
+builder.Services.AddScoped<PricingService>();
+builder.Services.AddScoped<InventoryService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<VipUpgradeService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IOrderCancellationService, OrderCancellationService>();
+builder.Services.AddScoped<ReportingService>();
+builder.Services.AddScoped<Shop_ProjForWeb.Core.Domain.Interfaces.IOrderStateMachine, OrderStateMachine>();
+builder.Services.AddScoped<Shop_ProjForWeb.Core.Domain.Interfaces.IVipStatusCalculator, VipStatusCalculator>();
+builder.Services.AddScoped<Shop_ProjForWeb.Core.Domain.Interfaces.IDiscountCalculator, AdditiveDiscountCalculator>();
+
+// Register Validators
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
+builder.Services.AddScoped<ProductImageService>();
+
+builder.Services.Configure<FileUploadOptions>(builder.Configuration.GetSection("FileUpload"));
+
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<AgifyService>();
+
+builder.Services.AddControllers();
+
+// Add Health Checks
+builder.Services.AddHealthChecks();
+
 builder.Services.AddEndpointsApiExplorer();
-
-// Swagger configuration
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
     {
-        Title = "Shop Web API",
+        Title = "Shop Project API",
         Version = "v1",
-        Description = "Web API with Authentication, Authorization, and Logging"
-    });
-
-    // Add JWT authentication to Swagger
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token",
-        Name = "Authorization",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
-    });
-
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
+        Description = "A comprehensive e-commerce API with inventory management, order processing, and VIP customer features",
+        Contact = new Microsoft.OpenApi.Models.OpenApiContact
         {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
+            Name = "Shop Project Team"
         }
     });
-});
-
-// Database
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
-        b => b.MigrationsAssembly("Shop_ProjForWeb.Infrastructure")));
-
-// JWT Authentication
-var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured");
-var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "ShopAPI";
-var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "ShopAPI";
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
+    
+    // Enable XML comments for better Swagger documentation
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtIssuer,
-        ValidAudience = jwtAudience,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
-    };
+        c.IncludeXmlComments(xmlPath);
+    }
 });
-
-builder.Services.AddAuthorization();
-
-// Infrastructure
-builder.Services.AddInfrastructure(builder.Configuration);
-
-// Application Services
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IRoleService, RoleService>();
-builder.Services.AddScoped<IPermissionService, PermissionService>();
-
-// AutoMapper
-builder.Services.AddAutoMapper(typeof(MappingProfile));
-
-// FluentValidation
-builder.Services.AddValidatorsFromAssemblyContaining<RegisterRequestDtoValidator>();
-builder.Services.AddFluentValidationAutoValidation();
-builder.Services.AddFluentValidationClientsideAdapters();
-
-// CORS
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
-});
-
-// Rate Limiting
-builder.Services.AddMemoryCache();
-builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
-builder.Services.AddInMemoryRateLimiting();
-builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
-
-// Request Logging (transient, not scoped)
-builder.Services.AddTransient<RequestLoggingMiddleware>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
+// Ensure UploadedFiles directory exists
+var uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "UploadedFiles");
+if (!Directory.Exists(uploadFolder))
+{
+    Directory.CreateDirectory(uploadFolder);
+}
+
+app.UseMiddleware<GlobalExceptionMiddleware>();
+
+// Apply migrations and seed database
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<SupermarketDbContext>();
+    
+    // Only run migrations and seeding if using a relational database (not in-memory for tests)
+    if (db.Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory")
+    {
+        db.Database.Migrate();
+        await DbSeeder.SeedAsync(db);
+    }
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// Enable static file serving for uploaded images
+app.UseStaticFiles();
 
-// Security Headers (should be early in pipeline)
-app.UseSecurityHeaders();
-
-// Rate Limiting
-app.UseIpRateLimiting();
-
-// CORS
-app.UseCors("AllowAll");
-
-// Request Logging (before exception handling to log all requests)
-app.UseRequestLogging();
-
-// Exception Handling (should be before other middleware that might throw)
-app.UseExceptionHandling();
-
-// Audit Logging
-app.UseAuditLogging();
-
-// Authentication & Authorization
-app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-// Initialize database
-using (var scope = app.Services.CreateScope())
+// Add Health Check endpoints
+app.MapHealthChecks("/health");
+app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {
-    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await Shop_ProjForWeb.Infrastructure.Data.DbInitializer.InitializeAsync(context);
-}
-
-Log.Information("Application starting up");
+    Predicate = check => check.Tags.Contains("ready")
+});
 
 app.Run();
 
+// Make the implicit Program class accessible to integration tests
+public partial class Program { }

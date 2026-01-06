@@ -1,4 +1,4 @@
-﻿namespace Shop_ProjForWeb.Core.Application.Services;
+namespace Shop_ProjForWeb.Core.Application.Services;
 
 using Microsoft.EntityFrameworkCore;
 using Shop_ProjForWeb.Core.Application.DTOs;
@@ -35,7 +35,7 @@ public class InventoryService(IInventoryRepository inventoryRepository) : IInven
 
         const int maxRetries = 5; // Increased retries for better concurrency handling
         var random = new Random();
-
+        
         for (int attempt = 0; attempt < maxRetries; attempt++)
         {
             try
@@ -54,9 +54,9 @@ public class InventoryService(IInventoryRepository inventoryRepository) : IInven
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (attempt == maxRetries - 1)
+                if (attempt == maxRetries - 1) 
                     throw;
-
+                
                 // Exponential backoff with jitter to reduce thundering herd
                 var baseDelay = 100 * (int)Math.Pow(2, attempt);
                 var jitter = random.Next(0, baseDelay / 2);
@@ -78,7 +78,7 @@ public class InventoryService(IInventoryRepository inventoryRepository) : IInven
 
         const int maxRetries = 5; // Increased retries for better concurrency handling
         var random = new Random();
-
+        
         for (int attempt = 0; attempt < maxRetries; attempt++)
         {
             try
@@ -99,7 +99,7 @@ public class InventoryService(IInventoryRepository inventoryRepository) : IInven
             {
                 if (attempt == maxRetries - 1)
                     throw;
-
+                
                 // Exponential backoff with jitter
                 var baseDelay = 100 * (int)Math.Pow(2, attempt);
                 var jitter = random.Next(0, baseDelay / 2);
@@ -149,7 +149,7 @@ public class InventoryService(IInventoryRepository inventoryRepository) : IInven
             {
                 if (attempt == maxRetries - 1)
                     throw;
-
+                
                 await Task.Delay(100 * (attempt + 1));
             }
         }
@@ -181,7 +181,7 @@ public class InventoryService(IInventoryRepository inventoryRepository) : IInven
             {
                 if (attempt == maxRetries - 1)
                     throw;
-
+                
                 await Task.Delay(100 * (attempt + 1));
             }
         }
@@ -214,7 +214,7 @@ public class InventoryService(IInventoryRepository inventoryRepository) : IInven
             {
                 if (attempt == maxRetries - 1)
                     throw;
-
+                
                 // Exponential backoff
                 await Task.Delay(100 * (attempt + 1));
             }

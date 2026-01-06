@@ -1,4 +1,4 @@
-﻿namespace Shop_ProjForWeb.Core.Application.DTOs;
+namespace Shop_ProjForWeb.Core.Application.DTOs;
 
 using Shop_ProjForWeb.Core.Domain.Enums;
 

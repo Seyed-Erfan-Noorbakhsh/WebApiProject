@@ -1,4 +1,4 @@
-﻿namespace Shop_ProjForWeb.Core.Application.Services;
+namespace Shop_ProjForWeb.Core.Application.Services;
 
 using Shop_ProjForWeb.Core.Application.Interfaces;
 using Shop_ProjForWeb.Core.Domain.Entities;
@@ -6,8 +6,8 @@ using Shop_ProjForWeb.Core.Domain.Exceptions;
 using Shop_ProjForWeb.Core.Domain.Interfaces;
 
 public class VipUpgradeService(
-    IUserRepository userRepository,
-    IOrderRepository orderRepository,
+    IUserRepository userRepository, 
+    IOrderRepository orderRepository, 
     IVipStatusCalculator vipStatusCalculator,
     IVipStatusHistoryRepository vipStatusHistoryRepository)
 {
@@ -23,16 +23,16 @@ public class VipUpgradeService(
     /// </summary>
     public async Task CheckAndUpgradeAsync(Guid userId, decimal? orderTotal = null)
     {
-        var user = await _userRepository.GetByIdAsync(userId)
+        var user = await _userRepository.GetByIdAsync(userId) 
             ?? throw new UserNotFoundException($"User not found with id {userId}");
 
         // Calculate total spending from all paid orders
         var totalPaidAmount = await _orderRepository.GetTotalPaidAmountForUserAsync(userId);
-
+        
         // Calculate new tier using VipStatusCalculator
         var previousTier = user.VipTier;
         var newTier = _vipStatusCalculator.CalculateTier(totalPaidAmount);
-
+        
         // Update user's total spending
         user.TotalSpending = totalPaidAmount;
 
@@ -43,11 +43,11 @@ public class VipUpgradeService(
             // Tier has changed - update user and create history record
             var triggeringOrderTotal = orderTotal ?? 0m;
             var isUpgrade = newTier > previousTier;
-
+            
             user.VipTier = newTier;
             // IsVip is now a computed property (VipTier > 0), no need to set it
             user.UpdatedAt = DateTime.UtcNow;
-
+            
             // Only update VipUpgradedAt on upgrades
             if (isUpgrade)
             {
@@ -58,7 +58,7 @@ public class VipUpgradeService(
                 // Clear VipUpgradedAt when downgrading to normal
                 user.VipUpgradedAt = null;
             }
-
+            
             // Create history record for the tier change
             var reason = BuildReason(previousTier, newTier, totalPaidAmount);
             var history = new VipStatusHistory
@@ -70,13 +70,13 @@ public class VipUpgradeService(
                 TotalSpendingAtUpgrade = totalPaidAmount,
                 Reason = reason
             };
-
+            
             await _vipStatusHistoryRepository.AddAsync(history);
-
+            
             Console.WriteLine($"User {userId} tier changed: {previousTier} → {newTier}. Reason: {reason}");
-
+            
             await _userRepository.UpdateAsync(user);
-
+            
             // Verify the update
             var verifyUser = await _userRepository.GetByIdAsync(userId);
             Console.WriteLine($"After update verification: IsVip={verifyUser?.IsVip}, VipTier={verifyUser?.VipTier}");

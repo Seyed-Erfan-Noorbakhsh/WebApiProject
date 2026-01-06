@@ -1,4 +1,4 @@
-﻿namespace Shop_ProjForWeb.Core.Application.Services;
+namespace Shop_ProjForWeb.Core.Application.Services;
 
 using Shop_ProjForWeb.Core.Application.DTOs;
 using Shop_ProjForWeb.Core.Application.Interfaces;
@@ -149,7 +149,7 @@ public class OrderService(
 
         // Check and upgrade VIP status with the order total
         await _vipUpgradeService.CheckAndUpgradeAsync(order.UserId, order.TotalPrice);
-
+        
         // Save changes again to ensure VIP status is persisted
         await _unitOfWork.SaveChangesAsync();
     }

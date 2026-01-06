@@ -1,4 +1,4 @@
-﻿namespace Shop_ProjForWeb.Core.Application.Services;
+namespace Shop_ProjForWeb.Core.Application.Services;
 
 using FluentValidation;
 using FluentValidation.Results;
@@ -27,7 +27,7 @@ public class ValidationService : IValidationService
     public Task<ValidationResult> ValidateBusinessRulesAsync<T>(T model, string operation)
     {
         var result = new ValidationResult();
-
+        
         // Add business rule validations based on model type and operation
         switch (model)
         {
@@ -131,4 +131,4 @@ public class ValidationService : IValidationService
             result.Errors.Add(new ValidationFailure(nameof(userDto.FullName), "Full name cannot exceed 100 characters"));
         }
     }
-}//
+}

@@ -1,4 +1,4 @@
-﻿namespace Shop_ProjForWeb.Core.Application.Services;
+namespace Shop_ProjForWeb.Core.Application.Services;
 
 using Shop_ProjForWeb.Core.Domain.Interfaces;
 
@@ -32,10 +32,10 @@ public class PricingService(IDiscountCalculator discountCalculator)
         decimal basePrice, int productDiscountPercent, bool isVip)
     {
         var breakdown = _discountCalculator.GetDiscountBreakdown(basePrice, productDiscountPercent, isVip);
-
+        
         return (
-            breakdown.FinalPrice,
-            (int)breakdown.ProductDiscountPercent,
+            breakdown.FinalPrice, 
+            (int)breakdown.ProductDiscountPercent, 
             (int)breakdown.VipDiscountPercent
         );
     }
@@ -48,10 +48,10 @@ public class PricingService(IDiscountCalculator discountCalculator)
         decimal basePrice, int productDiscountPercent, int vipTier)
     {
         var breakdown = _discountCalculator.GetDiscountBreakdown(basePrice, productDiscountPercent, vipTier);
-
+        
         return (
-            breakdown.FinalPrice,
-            (int)breakdown.ProductDiscountPercent,
+            breakdown.FinalPrice, 
+            (int)breakdown.ProductDiscountPercent, 
             (int)breakdown.VipDiscountPercent
         );
     }

@@ -1,4 +1,4 @@
-﻿using Shop_ProjForWeb.Core.Domain.Enums;
+using Shop_ProjForWeb.Core.Domain.Enums;
 using Shop_ProjForWeb.Core.Domain.Interfaces;
 
 namespace Shop_ProjForWeb.Core.Application.Services;
@@ -48,7 +48,7 @@ public class OrderStateMachine : IOrderStateMachine
             var validTransitions = string.Join(", ", GetValidTransitions(from));
             var fromDescription = _statusDescriptions.GetValueOrDefault(from, from.ToString());
             var toDescription = _statusDescriptions.GetValueOrDefault(to, to.ToString());
-
+            
             throw new InvalidOperationException(
                 $"Invalid order status transition from '{from}' ({fromDescription}) to '{to}' ({toDescription}). " +
                 $"Valid transitions from {from}: {(validTransitions.Any() ? validTransitions : "None (terminal state)")}");
